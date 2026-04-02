@@ -96,16 +96,23 @@ let bestTime=localStorage.getItem('bestTime')||0;
 let joy=document.getElementById('joystick');
 let joyActive=false, joyOrigin={x:0,y:0};
 
+function resize(){
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight;
+}
+window.addEventListener('resize',resize);
+resize();
+
 function rand(){return Math.random()*WORLD;}
 function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
 
-// BLOBS (better)
+// BLOBS
 function createBlob(){
-let r=15+Math.random()*25; // random BIG sizes
+let r=15+Math.random()*25;
 return{
 x:rand(),y:rand(),
 r,
-speed:2.2 - r*0.03, // bigger = slower
+speed:Math.max(0.8,2.2 - r*0.03),
 angle:Math.random()*Math.PI*2
 };
 }
@@ -119,7 +126,7 @@ startTime=Date.now();
 }
 
 function separate(a,b){
-let d=dist(a,b);
+let d=dist(a,b)||1;
 let overlap=(a.r+b.r)-d;
 if(overlap>0){
 let dx=(a.x-b.x)/d;
@@ -134,16 +141,17 @@ b.y-=dy*overlap/2;
 function update(){
 let p=player;
 
-// PLAYER SPEED (size based)
-let baseSpeed=4 - p.r*0.05;
+// SPEED
+let speed=Math.max(1.2,4 - p.r*0.05);
 
 // movement
 let dx=mouse.x-canvas.width/2;
 let dy=mouse.y-canvas.height/2;
 let d=Math.hypot(dx,dy);
+
 if(d>10){
-p.x+=(dx/d)*baseSpeed;
-p.y+=(dy/d)*baseSpeed;
+p.x+=(dx/d)*speed;
+p.y+=(dy/d)*speed;
 }
 
 // bounds
@@ -164,12 +172,10 @@ p.r+=0.3;
 for(let i=blobs.length-1;i>=0;i--){
 let b=blobs[i];
 
-// squishy movement
 b.angle+=Math.random()*0.2-0.1;
 b.x+=Math.cos(b.angle)*b.speed;
 b.y+=Math.sin(b.angle)*b.speed;
 
-// bounds bounce
 if(b.x<b.r||b.x>WORLD-b.r)b.angle=Math.PI-b.angle;
 if(b.y<b.r||b.y>WORLD-b.r)b.angle=-b.angle;
 
@@ -178,7 +184,7 @@ for(let j=i+1;j<blobs.length;j++){
 separate(b,blobs[j]);
 }
 
-// player interaction
+// fight
 if(dist(p,b)<p.r+b.r){
 if(p.r>b.r){
 blobs.splice(i,1);
@@ -214,7 +220,7 @@ function render(){
 let W=canvas.width,H=canvas.height;
 let camX=player.x-W/2, camY=player.y-H/2;
 
-// outside world = black
+// black outside
 ctx.fillStyle='#000';
 ctx.fillRect(0,0,W,H);
 
@@ -230,7 +236,7 @@ ctx.arc(pt.x-camX,pt.y-camY,pt.r,0,Math.PI*2);
 ctx.fill();
 }
 
-// blobs (animated squish)
+// blobs
 for(let b of blobs){
 let squish=1+Math.sin(Date.now()/200)*0.1;
 ctx.save();
@@ -253,17 +259,14 @@ ctx.arc(0,0,player.r,0,Math.PI*2);
 ctx.fillStyle='white';
 ctx.fill();
 ctx.restore();
-}
 
-// MINIMAP
+// minimap
 mctx.fillStyle="#000";
 mctx.fillRect(0,0,150,150);
 
-// player
 mctx.fillStyle="white";
 mctx.fillRect(player.x/WORLD*150,player.y/WORLD*150,3,3);
 
-// blobs
 mctx.fillStyle="red";
 for(let b of blobs){
 mctx.fillRect(b.x/WORLD*150,b.y/WORLD*150,2,2);
@@ -277,14 +280,18 @@ render();
 requestAnimationFrame(loop);
 }
 
-document.getElementById('single').onclick=()=>{
+// ✅ FIXED BUTTON
+document.getElementById('single').addEventListener('click',()=>{
 document.getElementById('menu').style.display='none';
-canvas.width=innerWidth;
-canvas.height=innerHeight;
+
+// IMPORTANT: reset mouse to center so player moves immediately
+mouse.x=canvas.width/2;
+mouse.y=canvas.height/2;
+
 init();
 gameRunning=true;
 loop();
-};
+});
 
 // mouse
 window.addEventListener('mousemove',e=>{
@@ -292,7 +299,7 @@ mouse.x=e.clientX;
 mouse.y=e.clientY;
 });
 
-// mobile joystick
+// joystick
 joy.addEventListener('touchstart',e=>{
 joyActive=true;
 let r=joy.getBoundingClientRect();
