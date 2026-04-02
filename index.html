@@ -4,331 +4,715 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FARM.IO+</title>
-
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:#111018;overflow:hidden;font-family:sans-serif;}
 canvas{display:block;}
 
 #menu{
-position:fixed;inset:0;
-display:flex;flex-direction:column;
-align-items:center;justify-content:center;
-background:linear-gradient(#181622,#0e0c14);
-color:#fff;z-index:20;
+  position:fixed;inset:0;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  background:linear-gradient(#181622,#0e0c14);
+  color:#fff;z-index:20;
 }
 
 #title{
-font-size:64px;font-weight:900;
-background:linear-gradient(45deg,#a855f7,#6366f1);
--webkit-background-clip:text;color:transparent;
-margin-bottom:20px;
+  font-size:64px;font-weight:900;
+  background:linear-gradient(45deg,#a855f7,#6366f1);
+  -webkit-background-clip:text;color:transparent;
+  margin-bottom:10px;
+  letter-spacing:-2px;
 }
+
+#subtitle{
+  color:#666;font-size:14px;margin-bottom:24px;letter-spacing:2px;
+}
+
+.menu-buttons{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap;justify-content:center;}
 
 button{
-padding:14px 40px;margin:8px;
-border:none;border-radius:999px;
-font-size:18px;font-weight:bold;
-cursor:pointer;
+  padding:14px 40px;margin:4px;
+  border:none;border-radius:999px;
+  font-size:18px;font-weight:bold;
+  cursor:pointer;transition:transform 0.1s,opacity 0.1s;
 }
-#single{background:#7c3aed;color:#fff;}
+button:hover{transform:scale(1.04);opacity:0.92;}
+
+#playBtn{background:linear-gradient(90deg,#7c3aed,#6366f1);color:#fff;}
+#newsBtn{background:#1e1b2e;color:#a855f7;border:1px solid #a855f740;}
 
 #skins{
-display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;
+  display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap;justify-content:center;
 }
 .skin{
-width:30px;height:30px;border-radius:50%;
-cursor:pointer;border:2px solid transparent;
+  width:32px;height:32px;border-radius:50%;
+  cursor:pointer;border:2px solid transparent;
+  transition:transform 0.15s,border-color 0.15s;
 }
-.skin.selected{border:2px solid #a855f7;}
+.skin:hover{transform:scale(1.15);}
+.skin.selected{border:2px solid #a855f7;box-shadow:0 0 8px #a855f788;}
 
 #hud{
-position:fixed;top:10px;left:10px;
-background:rgba(20,18,30,0.9);
-padding:14px;border-radius:12px;
-color:#fff;font-size:16px;
+  position:fixed;top:10px;left:10px;
+  background:rgba(20,18,30,0.85);
+  padding:10px 14px;border-radius:12px;
+  color:#fff;font-size:15px;line-height:1.7;
+  pointer-events:none;backdrop-filter:blur(4px);
+  border:1px solid #ffffff10;
 }
 
 #leaderboard{
-position:fixed;top:10px;right:10px;
-background:rgba(20,18,30,0.9);
-padding:14px;border-radius:12px;
-color:#fff;font-size:16px;
-width:160px;
+  position:fixed;top:10px;right:10px;
+  background:rgba(20,18,30,0.85);
+  padding:12px 16px;border-radius:12px;
+  color:#fff;font-size:14px;
+  width:160px;line-height:1.8;
+  pointer-events:none;backdrop-filter:blur(4px);
+  border:1px solid #ffffff10;
 }
+#leaderboard b{color:#a855f7;}
 
-#minimap{
-position:fixed;bottom:10px;right:10px;
-width:200px;height:200px;
-background:#0e0c14;border:2px solid #444;
-border-radius:10px;
+/* minimap is drawn on the main canvas now — just a div overlay for border */
+#minimapWrap{
+  position:fixed;bottom:14px;right:14px;
+  width:160px;height:160px;
+  border:2px solid #333;border-radius:10px;
+  pointer-events:none;overflow:hidden;
+  background:#0e0c14;
+}
+#minimapCanvas{
+  width:160px;height:160px;
+  display:block;
 }
 
 #death{
-position:fixed;inset:0;
-display:none;align-items:center;justify-content:center;
-flex-direction:column;background:rgba(0,0,0,0.7);
-z-index:30;color:#fff;
+  position:fixed;inset:0;
+  display:none;align-items:center;justify-content:center;
+  flex-direction:column;background:rgba(0,0,0,0.75);
+  z-index:30;color:#fff;gap:12px;
 }
+#death h2{font-size:36px;color:#ef4444;}
+#death button{padding:12px 32px;font-size:16px;}
+#again{background:#7c3aed;color:#fff;}
+#exit{background:#1e1b2e;color:#aaa;border:1px solid #333;}
+
+/* NEWS OVERLAY */
+#newsOverlay{
+  position:fixed;inset:0;
+  background:rgba(10,8,18,0.97);
+  z-index:40;
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  padding:40px 20px;
+  overflow-y:auto;
+}
+#newsOverlay.open{display:flex;}
+#newsClose{
+  position:absolute;top:20px;right:24px;
+  background:none;border:none;color:#666;font-size:28px;cursor:pointer;
+  padding:4px 10px;border-radius:6px;
+}
+#newsClose:hover{color:#fff;background:#ffffff10;}
+#newsTitle{
+  font-size:40px;font-weight:900;
+  background:linear-gradient(45deg,#a855f7,#6366f1);
+  -webkit-background-clip:text;color:transparent;
+  margin-bottom:4px;
+}
+#newsSubtitle{color:#555;font-size:12px;letter-spacing:3px;margin-bottom:32px;}
+#newsFeed{
+  width:100%;max-width:640px;
+  display:flex;flex-direction:column;gap:16px;
+}
+.news-item{
+  background:#13111e;
+  border:1px solid #2a2740;
+  border-radius:14px;
+  padding:20px 24px;
+}
+.news-item .news-date{
+  font-size:11px;color:#6366f1;letter-spacing:2px;
+  text-transform:uppercase;margin-bottom:8px;
+}
+.news-item .news-headline{
+  font-size:18px;font-weight:700;color:#fff;margin-bottom:8px;
+}
+.news-item .news-body{
+  font-size:14px;color:#888;line-height:1.7;
+}
+.news-tag{
+  display:inline-block;
+  padding:2px 10px;border-radius:999px;font-size:11px;font-weight:700;
+  margin-right:6px;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;
+}
+.tag-fix{background:#ef444420;color:#ef4444;}
+.tag-update{background:#a855f720;color:#a855f7;}
+.tag-new{background:#22c55e20;color:#22c55e;}
 </style>
 </head>
 
 <body>
 
+<!-- MENU -->
 <div id="menu">
-<div id="title">FARM.IO+</div>
+  <div id="title">FARM.IO+</div>
+  <div id="subtitle">EAT · GROW · SURVIVE</div>
 
-<div id="skins">
-<div class="skin" data-c="red" style="background:red"></div>
-<div class="skin" data-c="orange" style="background:orange"></div>
-<div class="skin" data-c="yellow" style="background:yellow"></div>
-<div class="skin" data-c="green" style="background:green"></div>
-<div class="skin" data-c="blue" style="background:blue"></div>
-<div class="skin" data-c="pink" style="background:pink"></div>
-<div class="skin" data-c="black" style="background:black"></div>
-<div class="skin" data-c="white" style="background:white"></div>
+  <div id="skins"></div>
+
+  <div class="menu-buttons">
+    <button id="playBtn">▶ Play</button>
+    <button id="newsBtn">📰 News</button>
+  </div>
 </div>
 
-<button id="single">Play</button>
-</div>
-
+<!-- MAIN CANVAS -->
 <canvas id="canvas"></canvas>
-<canvas id="minimap"></canvas>
 
+<!-- MINIMAP -->
+<div id="minimapWrap">
+  <canvas id="minimapCanvas" width="160" height="160"></canvas>
+</div>
+
+<!-- HUD -->
 <div id="hud">
-<div id="score"></div>
-<div id="time"></div>
+  <div id="score"></div>
+  <div id="time"></div>
 </div>
 
+<!-- LEADERBOARD -->
 <div id="leaderboard">
-<div><b>Leaderboard</b></div>
-<div id="lb"></div>
+  <div><b>Leaderboard</b></div>
+  <div id="lb"></div>
 </div>
 
+<!-- DEATH SCREEN -->
 <div id="death">
-<h2>You Died</h2>
-<div id="countdown"></div>
-<button id="again">Play Again</button>
-<button id="exit">Exit</button>
+  <h2>💀 You Died</h2>
+  <div id="countdown" style="color:#888;font-size:16px;"></div>
+  <button id="again">Play Again</button>
+  <button id="exit">Exit</button>
+</div>
+
+<!-- NEWS OVERLAY -->
+<div id="newsOverlay">
+  <button id="newsClose">✕</button>
+  <div id="newsTitle">FARM.IO+ NEWS</div>
+  <div id="newsSubtitle">PATCH NOTES &amp; UPDATES</div>
+  <div id="newsFeed">
+    <!-- News items loaded from news.json or news.html -->
+  </div>
 </div>
 
 <script>
-const canvas=document.getElementById('canvas');
-const ctx=canvas.getContext('2d');
-const mini=document.getElementById('minimap');
-const mctx=mini.getContext('2d');
+// ─── CANVAS SETUP ────────────────────────────────────────────────
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const miniCanvas = document.getElementById('minimapCanvas');
+const mctx = miniCanvas.getContext('2d');
 
-const WORLD=3000;
+const WORLD = 3000;
+const MINIMAP_SIZE = 160;
 
-let player,points,blobs;
-let mouse={x:0,y:0};
-let gameRunning=false,startTime=0;
-let playerColor=localStorage.getItem('skin')||'white';
+let player, points, blobs;
+let mouse = { x: 0, y: 0 };
+let gameRunning = false, startTime = 0;
+let playerColor = localStorage.getItem('skin') || 'white';
+let deathCountdownInterval = null;
 
-// resize
-function resize(){canvas.width=innerWidth;canvas.height=innerHeight;}
-window.addEventListener('resize',resize);resize();
+// ─── RESIZE ──────────────────────────────────────────────────────
+function resize() {
+  canvas.width = innerWidth;
+  canvas.height = innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
 
-function rand(){return Math.random()*WORLD;}
-function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
+// ─── HELPERS ─────────────────────────────────────────────────────
+function rand(min = 0, max = WORLD) { return min + Math.random() * (max - min); }
+function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+function getRadius(score) { return Math.sqrt(score) * 2; }
 
-// SAFE SIZE SYSTEM
-function getRadius(score){
-return Math.sqrt(score)*2;
+// ─── BLOB CREATION ───────────────────────────────────────────────
+function createBlob(forceEdge) {
+  let score = 200 + Math.random() * 800;
+  let x, y;
+  if (forceEdge) {
+    // Spawn away from center to avoid overlap with player start
+    const side = Math.floor(Math.random() * 4);
+    if (side === 0) { x = rand(0, WORLD * 0.3); y = rand(); }
+    else if (side === 1) { x = rand(WORLD * 0.7, WORLD); y = rand(); }
+    else if (side === 2) { x = rand(); y = rand(0, WORLD * 0.3); }
+    else { x = rand(); y = rand(WORLD * 0.7, WORLD); }
+  } else {
+    x = rand();
+    y = rand();
+  }
+  return {
+    x, y,
+    score,
+    vx: (Math.random() - 0.5) * 2,
+    vy: (Math.random() - 0.5) * 2,
+    wobble: 0,
+    wobbleSpeed: 0.04 + Math.random() * 0.04,
+    color: `hsl(${Math.random() * 30 + 345},85%,55%)`, // varied red/pink
+    name: 'BOT'
+  };
 }
 
-// blobs
-function createBlob(){
-let score=200+Math.random()*800;
-return{
-x:rand(),y:rand(),
-score,
-angle:Math.random()*6
-};
+// ─── INIT ────────────────────────────────────────────────────────
+function init() {
+  player = { x: 1500, y: 1500, score: 100 };
+  points = Array.from({ length: 120 }, () => ({
+    x: rand(), y: rand(),
+    hue: Math.floor(Math.random() * 60 + 100) // green range
+  }));
+  blobs = Array.from({ length: 8 }, () => createBlob(true));
+  startTime = Date.now();
 }
 
-function init(){
-player={x:1500,y:1500,score:100};
-points=Array.from({length:80},()=>({x:rand(),y:rand()}));
-blobs=Array.from({length:6},createBlob);
-startTime=Date.now();
+// ─── DEATH ───────────────────────────────────────────────────────
+function die() {
+  gameRunning = false;
+  const d = document.getElementById('death');
+  d.style.display = 'flex';
+
+  if (deathCountdownInterval) clearInterval(deathCountdownInterval);
+  let t = 5;
+  const cd = document.getElementById('countdown');
+  cd.textContent = `Auto-returning in ${t}s`;
+  deathCountdownInterval = setInterval(() => {
+    t--;
+    cd.textContent = `Auto-returning in ${t}s`;
+    if (t <= 0) { clearInterval(deathCountdownInterval); showMenu(); }
+  }, 1000);
 }
 
-// death
-function die(){
-gameRunning=false;
-let d=document.getElementById('death');
-d.style.display='flex';
-
-let t=3;
-let cd=document.getElementById('countdown');
-cd.textContent="Returning in "+t;
-
-let int=setInterval(()=>{
-t--;cd.textContent="Returning in "+t;
-if(t<=0){clearInterval(int);showMenu();}
-},1000);
+function showMenu() {
+  document.getElementById('menu').style.display = 'flex';
+  document.getElementById('death').style.display = 'none';
+  document.getElementById('minimapWrap').style.display = 'none';
+  document.getElementById('hud').style.display = 'none';
+  document.getElementById('leaderboard').style.display = 'none';
 }
 
-function showMenu(){
-document.getElementById('menu').style.display='flex';
-document.getElementById('death').style.display='none';
+function startGame() {
+  document.getElementById('menu').style.display = 'none';
+  document.getElementById('death').style.display = 'none';
+  document.getElementById('minimapWrap').style.display = 'block';
+  document.getElementById('hud').style.display = 'block';
+  document.getElementById('leaderboard').style.display = 'block';
+  init();
+  gameRunning = true;
+  loop();
 }
 
-// update
-function update(){
-let r=getRadius(player.score);
-let speed=Math.max(1.5,5-r*0.05);
+// ─── UPDATE ──────────────────────────────────────────────────────
+function update() {
+  const r = getRadius(player.score);
+  const speed = Math.max(1.5, 6 - r * 0.04);
 
-// move
-let dx=mouse.x-canvas.width/2;
-let dy=mouse.y-canvas.height/2;
-let d=Math.hypot(dx,dy);
+  // Move player toward mouse
+  const dx = mouse.x - canvas.width / 2;
+  const dy = mouse.y - canvas.height / 2;
+  const d = Math.hypot(dx, dy);
+  if (d > 10) {
+    player.x += (dx / d) * speed;
+    player.y += (dy / d) * speed;
+  }
 
-if(d>10){
-player.x+=(dx/d)*speed;
-player.y+=(dy/d)*speed;
+  // FIX: clamp player strictly inside world bounds
+  player.x = Math.max(r, Math.min(WORLD - r, player.x));
+  player.y = Math.max(r, Math.min(WORLD - r, player.y));
+
+  // Eat food points
+  for (let i = points.length - 1; i >= 0; i--) {
+    if (dist(player, points[i]) < r + 5) {
+      points.splice(i, 1);
+      points.push({ x: rand(), y: rand(), hue: Math.floor(Math.random() * 60 + 100) });
+      player.score += 15;
+    }
+  }
+
+  // Blobs update
+  for (let b of blobs) {
+    const br = getRadius(b.score);
+
+    // Animate wobble
+    b.wobble += b.wobbleSpeed;
+
+    // Steering: wander with occasional chase of player if small enough
+    const toPlayerDist = dist(b, player);
+    const playerR = getRadius(player.score);
+
+    if (b.score > player.score && toPlayerDist < 600) {
+      // Chase player
+      const pdx = player.x - b.x;
+      const pdy = player.y - b.y;
+      const pd = Math.hypot(pdx, pdy);
+      b.vx += (pdx / pd) * 0.12;
+      b.vy += (pdy / pd) * 0.12;
+    } else if (b.score < player.score && toPlayerDist < 400) {
+      // Flee from player
+      const pdx = b.x - player.x;
+      const pdy = b.y - player.y;
+      const pd = Math.hypot(pdx, pdy);
+      b.vx += (pdx / pd) * 0.15;
+      b.vy += (pdy / pd) * 0.15;
+    } else {
+      // Wander
+      b.vx += (Math.random() - 0.5) * 0.3;
+      b.vy += (Math.random() - 0.5) * 0.3;
+    }
+
+    // Limit speed
+    const bspeed = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
+    const maxSpeed = Math.max(1.2, 3 - br * 0.02);
+    if (bspeed > maxSpeed) {
+      b.vx = (b.vx / bspeed) * maxSpeed;
+      b.vy = (b.vy / bspeed) * maxSpeed;
+    }
+
+    b.x += b.vx;
+    b.y += b.vy;
+
+    // FIX: clamp blobs inside world bounds (they now bounce off walls)
+    if (b.x < br) { b.x = br; b.vx = Math.abs(b.vx); }
+    if (b.x > WORLD - br) { b.x = WORLD - br; b.vx = -Math.abs(b.vx); }
+    if (b.y < br) { b.y = br; b.vy = Math.abs(b.vy); }
+    if (b.y > WORLD - br) { b.y = WORLD - br; b.vy = -Math.abs(b.vy); }
+
+    // Collision with player
+    if (dist(player, b) < r + br - Math.min(r, br) * 0.5) {
+      if (player.score > b.score * 1.1) {
+        player.score += b.score * 0.4;
+        // Respawn blob far from player
+        const nb = createBlob(true);
+        Object.assign(b, nb);
+      } else if (b.score > player.score * 1.1) {
+        die();
+      }
+    }
+  }
+
+  // HUD
+  document.getElementById('score').textContent = "Score: " + Math.floor(player.score);
+  document.getElementById('time').textContent = "Time: " + Math.floor((Date.now() - startTime) / 1000) + "s";
+
+  // Leaderboard
+  const sorted = [...blobs, { score: player.score, isPlayer: true }].sort((a, b) => b.score - a.score);
+  document.getElementById('lb').innerHTML = sorted.slice(0, 5).map((e, i) =>
+    `${i + 1}. <span style="color:${e.isPlayer ? '#a855f7' : '#ef4444'}">${Math.floor(e.score)}</span>`
+  ).join("<br>");
 }
 
-// bounds
-player.x=Math.max(r,Math.min(WORLD-r,player.x));
-player.y=Math.max(r,Math.min(WORLD-r,player.y));
-
-// points
-for(let i=points.length-1;i>=0;i--){
-if(dist(player,points[i])<r){
-points.splice(i,1);
-points.push({x:rand(),y:rand()});
-player.score+=20;
-}
-}
-
-// blobs
-for(let b of blobs){
-let br=getRadius(b.score);
-
-b.x+=Math.cos(b.angle)*1.5;
-b.y+=Math.sin(b.angle)*1.5;
-if(Math.random()<0.02)b.angle+=Math.random()-0.5;
-
-if(dist(player,b)<r+br){
-if(player.score>b.score){
-player.score+=b.score*0.5; // controlled growth
-b.score=200+Math.random()*800;
-b.x=rand();b.y=rand();
-}else{
-die();
-}
-}
+// ─── DRAW WOBBLY CIRCLE ──────────────────────────────────────────
+function drawWobblyCircle(cx, cy, r, wobble, color, alpha = 1) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.beginPath();
+  const steps = 32;
+  for (let i = 0; i <= steps; i++) {
+    const angle = (i / steps) * Math.PI * 2;
+    const noise = 1 + Math.sin(angle * 4 + wobble) * 0.06 + Math.cos(angle * 3 + wobble * 1.3) * 0.04;
+    const rx = cx + Math.cos(angle) * r * noise;
+    const ry = cy + Math.sin(angle) * r * noise;
+    if (i === 0) ctx.moveTo(rx, ry);
+    else ctx.lineTo(rx, ry);
+  }
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+  // Glow rim
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.globalAlpha = alpha * 0.4;
+  ctx.stroke();
+  ctx.restore();
 }
 
-// HUD
-document.getElementById('score').textContent="Score: "+Math.floor(player.score);
-document.getElementById('time').textContent="Time: "+Math.floor((Date.now()-startTime)/1000);
+// ─── RENDER ──────────────────────────────────────────────────────
+function render() {
+  const W = canvas.width, H = canvas.height;
+  const r = getRadius(player.score);
+  const camX = player.x - W / 2;
+  const camY = player.y - H / 2;
 
-// leaderboard
-let sorted=[...blobs,player].sort((a,b)=>b.score-a.score);
-document.getElementById('lb').innerHTML=
-sorted.slice(0,5).map((e,i)=>`${i+1}. ${Math.floor(e.score)}`).join("<br>");
+  // Background
+  ctx.fillStyle = "#0a0810";
+  ctx.fillRect(0, 0, W, H);
+
+  // World area
+  const wx = -camX, wy = -camY;
+  ctx.fillStyle = "#111018";
+  ctx.fillRect(wx, wy, WORLD, WORLD);
+
+  // Grid lines
+  ctx.strokeStyle = "#1a1828";
+  ctx.lineWidth = 1;
+  const gridSize = 100;
+  const startGX = Math.floor(camX / gridSize) * gridSize;
+  const startGY = Math.floor(camY / gridSize) * gridSize;
+  for (let gx = startGX; gx < camX + W; gx += gridSize) {
+    if (gx < 0 || gx > WORLD) continue;
+    ctx.beginPath();
+    ctx.moveTo(gx - camX, Math.max(wy, 0));
+    ctx.lineTo(gx - camX, Math.min(wy + WORLD, H));
+    ctx.stroke();
+  }
+  for (let gy = startGY; gy < camY + H; gy += gridSize) {
+    if (gy < 0 || gy > WORLD) continue;
+    ctx.beginPath();
+    ctx.moveTo(Math.max(wx, 0), gy - camY);
+    ctx.lineTo(Math.min(wx + WORLD, W), gy - camY);
+    ctx.stroke();
+  }
+
+  // World border glow
+  ctx.save();
+  ctx.strokeStyle = "#a855f740";
+  ctx.lineWidth = 4;
+  ctx.strokeRect(wx, wy, WORLD, WORLD);
+  ctx.restore();
+
+  // Food points
+  for (let pt of points) {
+    const sx = pt.x - camX, sy = pt.y - camY;
+    if (sx < -10 || sx > W + 10 || sy < -10 || sy > H + 10) continue;
+    ctx.beginPath();
+    ctx.arc(sx, sy, 5, 0, Math.PI * 2);
+    ctx.fillStyle = `hsl(${pt.hue},80%,55%)`;
+    ctx.fill();
+    // small glow
+    ctx.beginPath();
+    ctx.arc(sx, sy, 7, 0, Math.PI * 2);
+    ctx.fillStyle = `hsla(${pt.hue},80%,55%,0.15)`;
+    ctx.fill();
+  }
+
+  // Blobs (enemy)
+  for (let b of blobs) {
+    const br = getRadius(b.score);
+    const sx = b.x - camX, sy = b.y - camY;
+    if (sx < -br - 10 || sx > W + br + 10 || sy < -br - 10 || sy > H + br + 10) continue;
+
+    // Shadow
+    ctx.save();
+    ctx.globalAlpha = 0.2;
+    ctx.beginPath();
+    ctx.ellipse(sx, sy + br * 0.7, br * 0.85, br * 0.25, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "#000";
+    ctx.fill();
+    ctx.restore();
+
+    drawWobblyCircle(sx, sy, br, b.wobble, b.color);
+
+    // Shine
+    ctx.save();
+    ctx.globalAlpha = 0.18;
+    ctx.beginPath();
+    ctx.arc(sx - br * 0.25, sy - br * 0.25, br * 0.35, 0, Math.PI * 2);
+    ctx.fillStyle = "#fff";
+    ctx.fill();
+    ctx.restore();
+
+    // Score text
+    if (br > 12) {
+      ctx.fillStyle = "#fff";
+      ctx.font = `bold ${Math.max(10, br * 0.35)}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.globalAlpha = 0.9;
+      ctx.fillText(Math.floor(b.score), sx, sy);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // Player shadow
+  ctx.save();
+  ctx.globalAlpha = 0.2;
+  ctx.beginPath();
+  ctx.ellipse(canvas.width / 2, canvas.height / 2 + r * 0.7, r * 0.85, r * 0.25, 0, 0, Math.PI * 2);
+  ctx.fillStyle = "#000";
+  ctx.fill();
+  ctx.restore();
+
+  // Player blob
+  const px = canvas.width / 2, py = canvas.height / 2;
+  drawWobblyCircle(px, py, r, Date.now() * 0.002, playerColor);
+
+  // Player shine
+  ctx.save();
+  ctx.globalAlpha = 0.2;
+  ctx.beginPath();
+  ctx.arc(px - r * 0.25, py - r * 0.25, r * 0.35, 0, Math.PI * 2);
+  ctx.fillStyle = "#fff";
+  ctx.fill();
+  ctx.restore();
+
+  // Player label
+  if (r > 10) {
+    const labelColor = playerColor === 'white' || playerColor === 'yellow' ? '#000' : '#fff';
+    ctx.fillStyle = labelColor;
+    ctx.font = `bold ${Math.max(10, r * 0.35)}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(Math.floor(player.score), px, py);
+  }
+
+  // ── MINIMAP ────────────────────────────────────────────────────
+  // FIX: clear every frame, map blob/player positions correctly
+  mctx.clearRect(0, 0, MINIMAP_SIZE, MINIMAP_SIZE);
+
+  // BG
+  mctx.fillStyle = "#0e0c14";
+  mctx.fillRect(0, 0, MINIMAP_SIZE, MINIMAP_SIZE);
+
+  // World border on minimap
+  mctx.strokeStyle = "#a855f760";
+  mctx.lineWidth = 1.5;
+  mctx.strokeRect(0.5, 0.5, MINIMAP_SIZE - 1, MINIMAP_SIZE - 1);
+
+  const scale = MINIMAP_SIZE / WORLD;
+
+  // Food dots (tiny)
+  mctx.fillStyle = "#22c55e55";
+  for (let pt of points) {
+    mctx.fillRect(pt.x * scale - 0.5, pt.y * scale - 0.5, 1.5, 1.5);
+  }
+
+  // Enemy blobs on minimap
+  for (let b of blobs) {
+    const br = Math.max(2, getRadius(b.score) * scale);
+    mctx.beginPath();
+    mctx.arc(b.x * scale, b.y * scale, br, 0, Math.PI * 2);
+    mctx.fillStyle = "#ef4444cc";
+    mctx.fill();
+  }
+
+  // Player dot on minimap
+  const pr = Math.max(3, getRadius(player.score) * scale);
+  mctx.beginPath();
+  mctx.arc(player.x * scale, player.y * scale, pr, 0, Math.PI * 2);
+  mctx.fillStyle = playerColor;
+  mctx.fill();
+  mctx.strokeStyle = "#fff6";
+  mctx.lineWidth = 1;
+  mctx.stroke();
+
+  // Viewport rect on minimap
+  const vx = Math.max(0, camX) * scale;
+  const vy = Math.max(0, camY) * scale;
+  const vw = Math.min(W, WORLD - camX) * scale;
+  const vh = Math.min(H, WORLD - camY) * scale;
+  mctx.strokeStyle = "#ffffff30";
+  mctx.lineWidth = 1;
+  mctx.strokeRect(vx, vy, vw, vh);
 }
 
-// render
-function render(){
-let W=canvas.width,H=canvas.height;
-let r=getRadius(player.score);
-let camX=player.x-W/2, camY=player.y-H/2;
-
-// bg
-ctx.fillStyle="#000";
-ctx.fillRect(0,0,W,H);
-
-ctx.fillStyle="#111018";
-ctx.fillRect(-camX,-camY,WORLD,WORLD);
-
-// points
-ctx.fillStyle="#22c55e";
-for(let pt of points){
-ctx.beginPath();
-ctx.arc(pt.x-camX,pt.y-camY,4,0,Math.PI*2);
-ctx.fill();
+// ─── LOOP ────────────────────────────────────────────────────────
+function loop() {
+  if (!gameRunning) return;
+  update();
+  render();
+  requestAnimationFrame(loop);
 }
 
-// blobs
-for(let b of blobs){
-let br=getRadius(b.score);
-ctx.beginPath();
-ctx.arc(b.x-camX,b.y-camY,br,0,Math.PI*2);
-ctx.fillStyle="#ef4444";
-ctx.fill();
-
-ctx.fillStyle="#fff";
-ctx.font=`${br*0.4}px sans-serif`;
-ctx.textAlign='center';
-ctx.fillText(Math.floor(b.score),b.x-camX,b.y-camY);
-}
-
-// player
-ctx.beginPath();
-ctx.arc(player.x-camX,player.y-camY,r,0,Math.PI*2);
-ctx.fillStyle=playerColor;
-ctx.fill();
-
-ctx.fillStyle=playerColor==="white"?"#000":"#fff";
-ctx.font=`${r*0.4}px sans-serif`;
-ctx.textAlign='center';
-ctx.fillText(Math.floor(player.score),player.x-camX,player.y-camY);
-
-// minimap
-mctx.fillStyle="#0e0c14";
-mctx.fillRect(0,0,200,200);
-
-mctx.fillStyle=playerColor;
-mctx.fillRect(player.x/WORLD*200,player.y/WORLD*200,4,4);
-
-mctx.fillStyle="red";
-for(let b of blobs){
-mctx.fillRect(b.x/WORLD*200,b.y/WORLD*200,2,2);
-}
-}
-
-function loop(){
-if(!gameRunning)return;
-update();
-render();
-requestAnimationFrame(loop);
-}
-
-// start
-document.getElementById('single').onclick=()=>{
-document.getElementById('menu').style.display='none';
-init();
-gameRunning=true;
-loop();
-};
-
-// skins
-document.querySelectorAll('.skin').forEach(el=>{
-if(el.dataset.c===playerColor)el.classList.add('selected');
-
-el.onclick=()=>{
-document.querySelectorAll('.skin').forEach(s=>s.classList.remove('selected'));
-el.classList.add('selected');
-playerColor=el.dataset.c;
-localStorage.setItem('skin',playerColor);
-};
+// ─── SKIN PICKER ─────────────────────────────────────────────────
+const SKINS = [
+  { c: '#ef4444', label: 'Red' },
+  { c: 'orange', label: 'Orange' },
+  { c: '#facc15', label: 'Yellow' },
+  { c: '#22c55e', label: 'Green' },
+  { c: '#3b82f6', label: 'Blue' },
+  { c: '#ec4899', label: 'Pink' },
+  { c: '#a855f7', label: 'Purple' },
+  { c: 'white', label: 'White' },
+];
+const skinsEl = document.getElementById('skins');
+SKINS.forEach(s => {
+  const el = document.createElement('div');
+  el.className = 'skin' + (s.c === playerColor ? ' selected' : '');
+  el.style.background = s.c;
+  el.title = s.label;
+  el.onclick = () => {
+    document.querySelectorAll('.skin').forEach(x => x.classList.remove('selected'));
+    el.classList.add('selected');
+    playerColor = s.c;
+    localStorage.setItem('skin', playerColor);
+  };
+  skinsEl.appendChild(el);
 });
 
-// buttons
-document.getElementById('again').onclick=()=>{
-init();gameRunning=true;loop();
-};
-document.getElementById('exit').onclick=showMenu;
+// ─── BUTTONS ─────────────────────────────────────────────────────
+document.getElementById('playBtn').onclick = startGame;
+document.getElementById('again').onclick = startGame;
+document.getElementById('exit').onclick = showMenu;
 
-// mouse
-window.addEventListener('mousemove',e=>{
-mouse.x=e.clientX;
-mouse.y=e.clientY;
+// ─── NEWS ────────────────────────────────────────────────────────
+document.getElementById('newsBtn').onclick = loadNews;
+document.getElementById('newsClose').onclick = () => {
+  document.getElementById('newsOverlay').classList.remove('open');
+};
+
+async function loadNews() {
+  const overlay = document.getElementById('newsOverlay');
+  overlay.classList.add('open');
+  const feed = document.getElementById('newsFeed');
+  feed.innerHTML = '<div style="color:#555;text-align:center;padding:40px;">Loading news...</div>';
+
+  try {
+    const res = await fetch('news.json?' + Date.now());
+    if (!res.ok) throw new Error('not found');
+    const items = await res.json();
+    renderNews(items);
+  } catch {
+    // Fallback: try news.html iframe or show placeholder
+    feed.innerHTML = `
+      <div class="news-item">
+        <div class="news-date">April 2, 2026</div>
+        <span class="news-tag tag-new">NEW</span>
+        <div class="news-headline">News System Added</div>
+        <div class="news-body">The news panel has been added to FARM.IO+. To populate it, create a <code style="color:#a855f7">news.json</code> file in the same folder as this game. See <b>news.json</b> for the format.</div>
+      </div>
+      <div class="news-item">
+        <div class="news-date">April 2, 2026</div>
+        <span class="news-tag tag-fix">FIX</span>
+        <div class="news-headline">Bug Fixes — Minimap, Boundaries & Blobs</div>
+        <div class="news-body">Fixed minimap drawing outside its bounds. Fixed player and enemy blobs escaping the right/bottom world border. Improved blob AI with chase/flee behavior and animated wobble.</div>
+      </div>
+    `;
+  }
+}
+
+function renderNews(items) {
+  const feed = document.getElementById('newsFeed');
+  if (!items.length) {
+    feed.innerHTML = '<div style="color:#555;text-align:center;padding:40px;">No news yet.</div>';
+    return;
+  }
+  feed.innerHTML = items.map(item => `
+    <div class="news-item">
+      <div class="news-date">${item.date}</div>
+      ${(item.tags || []).map(t => `<span class="news-tag tag-${t.toLowerCase()}">${t}</span>`).join('')}
+      <div class="news-headline">${item.headline}</div>
+      <div class="news-body">${item.body}</div>
+    </div>
+  `).join('');
+}
+
+// ─── MOUSE ───────────────────────────────────────────────────────
+window.addEventListener('mousemove', e => {
+  mouse.x = e.clientX;
+  mouse.y = e.clientY;
 });
+
+// ─── INIT HIDDEN HUD/MAP ─────────────────────────────────────────
+document.getElementById('minimapWrap').style.display = 'none';
+document.getElementById('hud').style.display = 'none';
+document.getElementById('leaderboard').style.display = 'none';
 </script>
 </body>
 </html>
