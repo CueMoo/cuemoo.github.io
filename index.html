@@ -32,10 +32,9 @@ font-size:18px;font-weight:bold;
 cursor:pointer;
 }
 #single{background:#7c3aed;color:#fff;}
-#multi{background:#333;color:#777;}
 
 #skins{
-display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;justify-content:center;
+display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;
 }
 .skin{
 width:30px;height:30px;border-radius:50%;
@@ -45,15 +44,24 @@ cursor:pointer;border:2px solid transparent;
 
 #hud{
 position:fixed;top:10px;left:10px;
-color:#ddd;background:rgba(20,18,30,0.7);
-padding:10px;border-radius:10px;
-z-index:10;
+background:rgba(20,18,30,0.9);
+padding:14px;border-radius:12px;
+color:#fff;font-size:16px;
+}
+
+#leaderboard{
+position:fixed;top:10px;right:10px;
+background:rgba(20,18,30,0.9);
+padding:14px;border-radius:12px;
+color:#fff;font-size:16px;
+width:160px;
 }
 
 #minimap{
 position:fixed;bottom:10px;right:10px;
-width:150px;height:150px;background:#0e0c14;
-border:2px solid #444;border-radius:8px;
+width:200px;height:200px;
+background:#0e0c14;border:2px solid #444;
+border-radius:10px;
 }
 
 #death{
@@ -62,18 +70,6 @@ display:none;align-items:center;justify-content:center;
 flex-direction:column;background:rgba(0,0,0,0.7);
 z-index:30;color:#fff;
 }
-
-#joystick{
-position:fixed;bottom:30px;left:30px;
-width:100px;height:100px;border-radius:50%;
-background:rgba(255,255,255,0.08);
-display:none;align-items:center;justify-content:center;
-}
-#knob{
-width:50px;height:50px;border-radius:50%;
-background:rgba(255,255,255,0.3);
-}
-@media(max-width:768px){#joystick{display:flex;}}
 </style>
 </head>
 
@@ -89,12 +85,11 @@ background:rgba(255,255,255,0.3);
 <div class="skin" data-c="green" style="background:green"></div>
 <div class="skin" data-c="blue" style="background:blue"></div>
 <div class="skin" data-c="pink" style="background:pink"></div>
-<div class="skin" data-c="black" style="background:black;border:1px solid #555"></div>
+<div class="skin" data-c="black" style="background:black"></div>
 <div class="skin" data-c="white" style="background:white"></div>
 </div>
 
-<button id="single">Singleplayer</button>
-<button id="multi">Multiplayer (soon)</button>
+<button id="single">Play</button>
 </div>
 
 <canvas id="canvas"></canvas>
@@ -105,14 +100,17 @@ background:rgba(255,255,255,0.3);
 <div id="time"></div>
 </div>
 
+<div id="leaderboard">
+<div><b>Leaderboard</b></div>
+<div id="lb"></div>
+</div>
+
 <div id="death">
 <h2>You Died</h2>
 <div id="countdown"></div>
 <button id="again">Play Again</button>
 <button id="exit">Exit</button>
 </div>
-
-<div id="joystick"><div id="knob"></div></div>
 
 <script>
 const canvas=document.getElementById('canvas');
@@ -134,23 +132,26 @@ window.addEventListener('resize',resize);resize();
 function rand(){return Math.random()*WORLD;}
 function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
 
-// BLOBS
+// SAFE SIZE SYSTEM
+function getRadius(score){
+return Math.sqrt(score)*2;
+}
+
+// blobs
 function createBlob(){
-let r=20+Math.random()*30;
+let score=200+Math.random()*800;
 return{
 x:rand(),y:rand(),
-r,
-speed:Math.max(0.6,2.2-r*0.03),
-angle:Math.random()*Math.PI*2
+score,
+angle:Math.random()*6
 };
 }
 
 function init(){
-player={x:1500,y:1500,r:20,score:20};
-points=Array.from({length:80},()=>({x:rand(),y:rand(),r:6,phase:Math.random()*10}));
+player={x:1500,y:1500,score:100};
+points=Array.from({length:80},()=>({x:rand(),y:rand()}));
 blobs=Array.from({length:6},createBlob);
 startTime=Date.now();
-document.getElementById('death').style.display='none';
 }
 
 // death
@@ -176,8 +177,10 @@ document.getElementById('death').style.display='none';
 
 // update
 function update(){
-let speed=Math.max(1.2,4-player.r*0.05);
+let r=getRadius(player.score);
+let speed=Math.max(1.5,5-r*0.05);
 
+// move
 let dx=mouse.x-canvas.width/2;
 let dy=mouse.y-canvas.height/2;
 let d=Math.hypot(dx,dy);
@@ -188,44 +191,51 @@ player.y+=(dy/d)*speed;
 }
 
 // bounds
-player.x=Math.max(player.r,Math.min(WORLD-player.r,player.x));
-player.y=Math.max(player.r,Math.min(WORLD-player.r,player.y));
+player.x=Math.max(r,Math.min(WORLD-r,player.x));
+player.y=Math.max(r,Math.min(WORLD-r,player.y));
 
 // points
 for(let i=points.length-1;i>=0;i--){
-if(dist(player,points[i])<player.r){
+if(dist(player,points[i])<r){
 points.splice(i,1);
-points.push({x:rand(),y:rand(),r:6,phase:Math.random()*10});
-player.score+=10;
-player.r=player.score/2;
+points.push({x:rand(),y:rand()});
+player.score+=20;
 }
 }
 
 // blobs
 for(let b of blobs){
-b.x+=Math.cos(b.angle)*b.speed;
-b.y+=Math.sin(b.angle)*b.speed;
+let br=getRadius(b.score);
 
+b.x+=Math.cos(b.angle)*1.5;
+b.y+=Math.sin(b.angle)*1.5;
 if(Math.random()<0.02)b.angle+=Math.random()-0.5;
 
-if(b.x<b.r||b.x>WORLD-b.r)b.angle=Math.PI-b.angle;
-if(b.y<b.r||b.y>WORLD-b.r)b.angle=-b.angle;
-
-if(dist(player,b)<player.r+b.r){
-if(player.r>b.r){
-b.r=0;
-player.score+=50;
-player.r=player.score/2;
+if(dist(player,b)<r+br){
+if(player.score>b.score){
+player.score+=b.score*0.5; // controlled growth
+b.score=200+Math.random()*800;
+b.x=rand();b.y=rand();
 }else{
 die();
 }
 }
 }
+
+// HUD
+document.getElementById('score').textContent="Score: "+Math.floor(player.score);
+document.getElementById('time').textContent="Time: "+Math.floor((Date.now()-startTime)/1000);
+
+// leaderboard
+let sorted=[...blobs,player].sort((a,b)=>b.score-a.score);
+document.getElementById('lb').innerHTML=
+sorted.slice(0,5).map((e,i)=>`${i+1}. ${Math.floor(e.score)}`).join("<br>");
 }
 
 // render
 function render(){
 let W=canvas.width,H=canvas.height;
+let r=getRadius(player.score);
 let camX=player.x-W/2, camY=player.y-H/2;
 
 // bg
@@ -235,62 +245,52 @@ ctx.fillRect(0,0,W,H);
 ctx.fillStyle="#111018";
 ctx.fillRect(-camX,-camY,WORLD,WORLD);
 
-// points (VISIBLE NOW)
-for(let pt of points){
-let pulse=1+Math.sin(Date.now()/300+pt.phase)*0.3;
-ctx.beginPath();
-ctx.arc(pt.x-camX,pt.y-camY,pt.r*pulse,0,Math.PI*2);
+// points
 ctx.fillStyle="#22c55e";
-ctx.shadowColor="#22c55e";
-ctx.shadowBlur=10;
+for(let pt of points){
+ctx.beginPath();
+ctx.arc(pt.x-camX,pt.y-camY,4,0,Math.PI*2);
 ctx.fill();
-ctx.shadowBlur=0;
 }
 
 // blobs
 for(let b of blobs){
-if(b.r<=0)continue;
-
+let br=getRadius(b.score);
 ctx.beginPath();
-ctx.arc(b.x-camX,b.y-camY,b.r,0,Math.PI*2);
+ctx.arc(b.x-camX,b.y-camY,br,0,Math.PI*2);
 ctx.fillStyle="#ef4444";
 ctx.fill();
 
-// size text
 ctx.fillStyle="#fff";
-ctx.font=`${b.r*0.5}px sans-serif`;
+ctx.font=`${br*0.4}px sans-serif`;
 ctx.textAlign='center';
-ctx.textBaseline='middle';
-ctx.fillText(Math.floor(b.r),b.x-camX,b.y-camY);
+ctx.fillText(Math.floor(b.score),b.x-camX,b.y-camY);
 }
 
 // player
 ctx.beginPath();
-ctx.arc(player.x-camX,player.y-camY,player.r,0,Math.PI*2);
+ctx.arc(player.x-camX,player.y-camY,r,0,Math.PI*2);
 ctx.fillStyle=playerColor;
 ctx.fill();
 
-// score text
 ctx.fillStyle=playerColor==="white"?"#000":"#fff";
-ctx.font=`${player.r*0.5}px sans-serif`;
+ctx.font=`${r*0.4}px sans-serif`;
 ctx.textAlign='center';
-ctx.textBaseline='middle';
 ctx.fillText(Math.floor(player.score),player.x-camX,player.y-camY);
 
 // minimap
 mctx.fillStyle="#0e0c14";
-mctx.fillRect(0,0,150,150);
+mctx.fillRect(0,0,200,200);
 
 mctx.fillStyle=playerColor;
-mctx.fillRect(player.x/WORLD*150,player.y/WORLD*150,4,4);
+mctx.fillRect(player.x/WORLD*200,player.y/WORLD*200,4,4);
 
 mctx.fillStyle="red";
 for(let b of blobs){
-mctx.fillRect(b.x/WORLD*150,b.y/WORLD*150,2,2);
+mctx.fillRect(b.x/WORLD*200,b.y/WORLD*200,2,2);
 }
 }
 
-// loop
 function loop(){
 if(!gameRunning)return;
 update();
