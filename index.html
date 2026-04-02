@@ -310,12 +310,12 @@ button:active{transform:scale(0.97);}
   <div id="joystickBase"></div>
   <div id="joystickKnob"></div>
 </div>
-<div id="boostBtnMobile">⚡<br>BOOST</div>
+<div id="boostBtnMobile"><br>BOOST</div>
 
 <!-- DEATH SCREEN -->
 <div id="death">
   <div id="deathPanel">
-    <div id="deathTitle">💀 YOU DIED</div>
+    <div id="deathTitle">YOU DIED</div>
     <div id="deathSub">GAME OVER</div>
     <div class="stat-row">
       <span class="stat-label">Final Score</span>
@@ -998,25 +998,16 @@ document.getElementById('newsClose').onclick=()=>document.getElementById('newsOv
 async function loadNews(){
   document.getElementById('newsOverlay').classList.add('open');
   const feed=document.getElementById('newsFeed');
+
   feed.innerHTML='<div style="color:#2e2448;text-align:center;padding:36px;">Loading…</div>';
+
   try{
     const res=await fetch('news.json?'+Date.now());
-    if(!res.ok)throw 0;
-    renderNews(await res.json());
-  }catch{
-    feed.innerHTML=`
-      <div class="news-item">
-        <div class="news-date">April 2, 2026</div>
-        <span class="news-tag tag-new">NEW</span>
-        <div class="news-headline">v2.0 — Major Update</div>
-        <div class="news-body">Mobile joystick + touch boost, WASD + mouse input, ⚡ boost/eject mechanic, 🛡️⚡🧲 powerup drops (10s each), username input shown in-game and on leaderboard, animated particle menu with mascot, creator credit, redesigned death screen with final score, peak score, rank and time survived, brighter world, all major bugs fixed.</div>
-      </div>
-      <div class="news-item">
-        <div class="news-date">April 2, 2026</div>
-        <span class="news-tag tag-fix">FIX</span>
-        <div class="news-headline">Bug Fixes</div>
-        <div class="news-body">Fixed speed glitch on Play Again (full state reset every game). Fixed death screen flashing over menu. Fixed blobs escaping world boundaries. Minimap now renders correctly every frame with viewport indicator.</div>
-      </div>`;
+    const data=await res.json();
+    renderNews(data);
+  }catch(err){
+    feed.innerHTML='<div style="color:#ef4444;text-align:center;padding:36px;">Failed to load news.json</div>';
+    console.error(err);
   }
 }
 function renderNews(items){
