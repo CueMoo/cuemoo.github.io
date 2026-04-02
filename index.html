@@ -1,197 +1,208 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FARM.IO+</title>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-body{background:#0c1017;overflow:hidden;font-family:'Segoe UI',sans-serif;}
+body{background:#0c1017;overflow:hidden;font-family:sans-serif;}
 canvas{display:block;}
 
 #menu{
-position:fixed;inset:0;z-index:30;
-background:#0c1017;
-display:flex;align-items:center;justify-content:center;flex-direction:column;
+position:fixed;inset:0;
+display:flex;flex-direction:column;
+align-items:center;justify-content:center;
+background:#0c1017;color:#fff;
+z-index:20;
 }
-#menu.hidden{display:none;}
-#menu h1{font-size:70px;color:#fff;}
-#menu span{color:#34d399;}
-#btn-start{
-padding:16px 48px;background:#34d399;border:none;
-border-radius:999px;font-size:20px;font-weight:bold;cursor:pointer;
+button{
+padding:14px 40px;margin:10px;
+border:none;border-radius:999px;
+font-size:18px;font-weight:bold;
+cursor:pointer;
 }
+#single{background:#34d399;}
+#multi{background:#555;color:#aaa;}
 
 #hud{
-position:fixed;top:0;left:0;right:0;
-display:flex;justify-content:space-between;
-padding:10px;color:#fff;z-index:10;
+position:fixed;top:10px;left:10px;color:#fff;z-index:10;
 }
+#hud div{margin:4px 0;}
+
+#joystick{
+position:fixed;bottom:30px;left:30px;
+width:100px;height:100px;border-radius:50%;
+background:rgba(255,255,255,0.1);
+display:none;align-items:center;justify-content:center;
+}
+#knob{
+width:50px;height:50px;border-radius:50%;
+background:rgba(255,255,255,0.3);
+}
+@media(max-width:768px){#joystick{display:flex;}}
 </style>
 </head>
 
 <body>
 
 <div id="menu">
-<h1>FARM<span>.IO+</span></h1>
-<button id="btn-start">PLAY</button>
+<h1>FARM.IO+</h1>
+<button id="single">Singleplayer</button>
+<button id="multi">Multiplayer (soon)</button>
 </div>
 
 <canvas id="canvas"></canvas>
 
 <div id="hud">
-<div id="score">0</div>
-<div id="speed">1x</div>
+<div id="score">Score: 0</div>
+<div id="time">Time: 0</div>
+<div id="bestScore"></div>
+<div id="bestTime"></div>
 </div>
+
+<div id="joystick"><div id="knob"></div></div>
 
 <script>
 const canvas=document.getElementById('canvas');
 const ctx=canvas.getContext('2d');
 
-const WORLD_W=3000, WORLD_H=3000;
-const BASE_SPEED=3.2;
-
-let player,points,whites,cops;
+let player,points,enemies,powerups;
 let keys={},mouse={x:0,y:0};
 let gameRunning=false;
+let startTime=0;
 
-// NEW SYSTEMS
-let camSmoothX=0,camSmoothY=0;
-let dashCooldown=0,dashActive=0;
-let combo=0,comboTimer=0;
-let particles=[];
-let screenShake=0;
+let bestScore=localStorage.getItem('bestScore')||0;
+let bestTime=localStorage.getItem('bestTime')||0;
 
-function randPos(){return{x:Math.random()*WORLD_W,y:Math.random()*WORLD_H};}
+// MOBILE
+let joy=document.getElementById('joystick');
+let knob=document.getElementById('knob');
+let joyActive=false, joyOrigin={x:0,y:0};
+
+const WORLD=3000;
+
+function rand(){return Math.random()*WORLD;}
+
 function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
 
-function createPoint(){return{...randPos(),r:6};}
-function createWhite(){return{...randPos(),r:14,dx:1,dy:0};}
-function createCop(){return{...randPos(),r:20,dx:1,dy:0};}
-
 function init(){
-player={x:1500,y:1500,r:18,speed:BASE_SPEED,score:0};
-points=Array.from({length:100},createPoint);
-whites=Array.from({length:8},createWhite);
-cops=Array.from({length:4},createCop);
+player={x:1500,y:1500,r:20,speed:3,score:0};
+points=Array.from({length:80},()=>({x:rand(),y:rand(),r:5}));
+enemies=Array.from({length:6},()=>({x:rand(),y:rand(),r:18}));
+powerups=[];
+startTime=Date.now();
 }
 
-function spawnParticles(x,y){
-for(let i=0;i<10;i++){
-particles.push({
-x,y,
-dx:(Math.random()-0.5)*4,
-dy:(Math.random()-0.5)*4,
-life:30
-});
+function spawnPowerup(){
+let type=Math.random()<0.5?'score':'time';
+powerups.push({x:rand(),y:rand(),r:10,type});
+}
+
+setInterval(spawnPowerup,5000);
+
+// COLLISION PUSH
+function separate(a,b){
+let d=dist(a,b);
+let overlap=(a.r+b.r)-d;
+if(overlap>0){
+let dx=(a.x-b.x)/d;
+let dy=(a.y-b.y)/d;
+a.x+=dx*overlap/2;
+b.x-=dx*overlap/2;
+a.y+=dy*overlap/2;
+b.y-=dy*overlap/2;
 }
 }
- function update(){
+
+function update(){
 let p=player;
-
-// DASH
-if(keys['shift']&&dashCooldown<=0){
-dashActive=15;
-dashCooldown=120;
-}
-dashCooldown--;
-
-let boost=1;
-if(dashActive>0){
-dashActive--;
-boost=2.5;
-}
 
 // movement
 let dx=mouse.x-canvas.width/2;
 let dy=mouse.y-canvas.height/2;
 let d=Math.hypot(dx,dy);
-
 if(d>10){
-p.x+=(dx/d)*p.speed*boost;
-p.y+=(dy/d)*p.speed*boost;
+p.x+=(dx/d)*p.speed;
+p.y+=(dy/d)*p.speed;
 }
 
 // bounds
-p.x=Math.max(p.r,Math.min(WORLD_W-p.r,p.x));
-p.y=Math.max(p.r,Math.min(WORLD_H-p.r,p.y));
+p.x=Math.max(p.r,Math.min(WORLD-p.r,p.x));
+p.y=Math.max(p.r,Math.min(WORLD-p.r,p.y));
 
-// collect
+// collect points
 for(let i=points.length-1;i>=0;i--){
-if(dist(p,points[i])<p.r+points[i].r){
+if(dist(p,points[i])<p.r){
 points.splice(i,1);
-points.push(createPoint());
-
-combo++;
-comboTimer=120;
-
-p.score+=10+combo*2;
+points.push({x:rand(),y:rand(),r:5});
+p.score+=10;
 p.r+=0.2;
-
-// SIZE SLOW
-p.speed=BASE_SPEED+Math.max(0,3-p.r*0.05);
-
-spawnParticles(p.x,p.y);
 }
 }
 
-// combo decay
-comboTimer--;
-if(comboTimer<=0)combo=0;
+// enemies
+for(let i=enemies.length-1;i>=0;i--){
+let e=enemies[i];
 
-// cops
-for(let c of cops){
-let dx=p.x-c.x;
-let dy=p.y-c.y;
+// simple chase
+let dx=p.x-e.x, dy=p.y-e.y;
 let d=Math.hypot(dx,dy);
+e.x+=(dx/d)*1.5;
+e.y+=(dy/d)*1.5;
 
-c.x+=(dx/d)*2;
-c.y+=(dy/d)*2;
+// collide enemies
+for(let j=i+1;j<enemies.length;j++){
+separate(e,enemies[j]);
+}
 
-if(d< p.r+c.r){
-screenShake=20;
-p.score*=0.8;
+// player vs enemy
+if(dist(p,e)<p.r+e.r){
+if(p.r>e.r){
+enemies.splice(i,1);
+p.score+=50;
+p.r+=1;
+}else{
+p.score*=0.5;
 p.x=1500;p.y=1500;
 }
 }
+}
 
-// particles
-for(let i=particles.length-1;i>=0;i--){
-let pr=particles[i];
-pr.x+=pr.dx;
-pr.y+=pr.dy;
-pr.life--;
-if(pr.life<=0)particles.splice(i,1);
+// powerups
+for(let i=powerups.length-1;i>=0;i--){
+let pw=powerups[i];
+if(dist(p,pw)<p.r){
+if(pw.type==='score')p.score+=100;
+if(pw.type==='time')startTime+=5000;
+powerups.splice(i,1);
+}
 }
 
 // HUD
-document.getElementById('score').textContent=Math.floor(p.score);
-document.getElementById('speed').textContent=p.speed.toFixed(1);
+let time=Math.floor((Date.now()-startTime)/1000);
+
+document.getElementById('score').textContent="Score: "+Math.floor(p.score);
+document.getElementById('time').textContent="Time: "+time;
+
+if(p.score>bestScore){
+bestScore=p.score;
+localStorage.setItem('bestScore',bestScore);
+}
+if(time>bestTime){
+bestTime=time;
+localStorage.setItem('bestTime',bestTime);
+}
+
+document.getElementById('bestScore').textContent="Best Score: "+bestScore;
+document.getElementById('bestTime').textContent="Best Time: "+bestTime;
 }
 
 function render(){
 let W=canvas.width,H=canvas.height;
-let p=player;
+let camX=player.x-W/2, camY=player.y-H/2;
 
-// CAMERA SMOOTH
-camSmoothX+=((p.x-W/2)-camSmoothX)*0.08;
-camSmoothY+=((p.y-H/2)-camSmoothY)*0.08;
-
-let camX=camSmoothX;
-let camY=camSmoothY;
-
-// SHAKE
-let sx=0,sy=0;
-if(screenShake>0){
-sx=(Math.random()-0.5)*screenShake;
-sy=(Math.random()-0.5)*screenShake;
-screenShake*=0.9;
-}
-
-ctx.setTransform(1,0,0,1,sx,sy);
-
-// bg
 ctx.fillStyle='#0c1017';
 ctx.fillRect(0,0,W,H);
 
@@ -203,29 +214,27 @@ ctx.arc(pt.x-camX,pt.y-camY,pt.r,0,Math.PI*2);
 ctx.fill();
 }
 
+// enemies
+ctx.fillStyle='red';
+for(let e of enemies){
+ctx.beginPath();
+ctx.arc(e.x-camX,e.y-camY,e.r,0,Math.PI*2);
+ctx.fill();
+}
+
+// powerups
+for(let pw of powerups){
+ctx.fillStyle=pw.type==='score'?'gold':'cyan';
+ctx.beginPath();
+ctx.arc(pw.x-camX,pw.y-camY,pw.r,0,Math.PI*2);
+ctx.fill();
+}
+
 // player
 ctx.fillStyle='white';
 ctx.beginPath();
-ctx.arc(p.x-camX,p.y-camY,p.r,0,Math.PI*2);
+ctx.arc(player.x-camX,player.y-camY,player.r,0,Math.PI*2);
 ctx.fill();
-
-// cops
-ctx.fillStyle='red';
-for(let c of cops){
-ctx.beginPath();
-ctx.arc(c.x-camX,c.y-camY,c.r,0,Math.PI*2);
-ctx.fill();
-}
-
-// particles
-ctx.fillStyle='yellow';
-for(let pr of particles){
-ctx.globalAlpha=pr.life/30;
-ctx.beginPath();
-ctx.arc(pr.x-camX,pr.y-camY,2,0,Math.PI*2);
-ctx.fill();
-ctx.globalAlpha=1;
-}
 }
 
 function loop(){
@@ -235,30 +244,39 @@ render();
 requestAnimationFrame(loop);
 }
 
-function startGame(){
-canvas.width=window.innerWidth;
-canvas.height=window.innerHeight;
-document.getElementById('menu').classList.add('hidden');
-
+document.getElementById('single').onclick=()=>{
+document.getElementById('menu').style.display='none';
+canvas.width=innerWidth;
+canvas.height=innerHeight;
 init();
 gameRunning=true;
 loop();
-}
+};
 
-document.getElementById('btn-start').onclick=startGame;
-
+// mouse
 window.addEventListener('mousemove',e=>{
 mouse.x=e.clientX;
 mouse.y=e.clientY;
 });
 
-window.addEventListener('keydown',e=>{
-keys[e.key.toLowerCase()]=true;
+// joystick
+joy.addEventListener('touchstart',e=>{
+joyActive=true;
+let r=joy.getBoundingClientRect();
+joyOrigin={x:r.left+r.width/2,y:r.top+r.height/2};
+});
+joy.addEventListener('touchmove',e=>{
+if(!joyActive)return;
+let t=e.touches[0];
+let dx=t.clientX-joyOrigin.x;
+let dy=t.clientY-joyOrigin.y;
+mouse.x=canvas.width/2+dx*3;
+mouse.y=canvas.height/2+dy*3;
+});
+joy.addEventListener('touchend',()=>{
+joyActive=false;
 });
 
-window.addEventListener('keyup',e=>{
-keys[e.key.toLowerCase()]=false;
-});
 </script>
 </body>
 </html>
