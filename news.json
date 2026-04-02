@@ -7,7 +7,7 @@
   },
   {
     "date": "April 2, 2026",
-    "tags": ["FIX", "UPDATE"]
+    "tags": ["FIX", "UPDATE"],
     "headline": "Bug Fixes - Spawn With Speed, And Death Screen",
     "body": "Fixed where the Play Again button no longer carries over boost state or stale velocity, fixed the fast-start bug after respawn.. Fixed Getting kicked to Menu and Death Screen"
   },
