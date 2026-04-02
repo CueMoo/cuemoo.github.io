@@ -7,7 +7,7 @@
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-body{background:#0c1017;overflow:hidden;font-family:sans-serif;}
+body{background:#000;overflow:hidden;font-family:sans-serif;}
 canvas{display:block;}
 
 #menu{
@@ -27,9 +27,19 @@ cursor:pointer;
 #multi{background:#555;color:#aaa;}
 
 #hud{
-position:fixed;top:10px;left:10px;color:#fff;z-index:10;
+position:fixed;top:10px;left:10px;
+color:#fff;z-index:10;
+background:rgba(0,0,0,0.5);
+padding:10px 14px;border-radius:10px;
+font-size:14px;
 }
-#hud div{margin:4px 0;}
+
+#minimap{
+position:fixed;bottom:10px;right:10px;
+width:150px;height:150px;
+background:#000;border:2px solid #555;
+border-radius:8px;
+}
 
 #joystick{
 position:fixed;bottom:30px;left:30px;
@@ -54,10 +64,11 @@ background:rgba(255,255,255,0.3);
 </div>
 
 <canvas id="canvas"></canvas>
+<canvas id="minimap"></canvas>
 
 <div id="hud">
-<div id="score">Score: 0</div>
-<div id="time">Time: 0</div>
+<div id="score"></div>
+<div id="time"></div>
 <div id="bestScore"></div>
 <div id="bestTime"></div>
 </div>
@@ -68,41 +79,45 @@ background:rgba(255,255,255,0.3);
 const canvas=document.getElementById('canvas');
 const ctx=canvas.getContext('2d');
 
-let player,points,enemies,powerups;
-let keys={},mouse={x:0,y:0};
-let gameRunning=false;
+const mini=document.getElementById('minimap');
+const mctx=mini.getContext('2d');
+
+const WORLD=3000;
+
+let player,points,blobs,powerups;
+let mouse={x:0,y:0};
 let startTime=0;
+let gameRunning=false;
 
 let bestScore=localStorage.getItem('bestScore')||0;
 let bestTime=localStorage.getItem('bestTime')||0;
 
 // MOBILE
 let joy=document.getElementById('joystick');
-let knob=document.getElementById('knob');
 let joyActive=false, joyOrigin={x:0,y:0};
 
-const WORLD=3000;
-
 function rand(){return Math.random()*WORLD;}
-
 function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
 
+// BLOBS (better)
+function createBlob(){
+let r=15+Math.random()*25; // random BIG sizes
+return{
+x:rand(),y:rand(),
+r,
+speed:2.2 - r*0.03, // bigger = slower
+angle:Math.random()*Math.PI*2
+};
+}
+
 function init(){
-player={x:1500,y:1500,r:20,speed:3,score:0};
+player={x:1500,y:1500,r:20,score:0};
 points=Array.from({length:80},()=>({x:rand(),y:rand(),r:5}));
-enemies=Array.from({length:6},()=>({x:rand(),y:rand(),r:18}));
+blobs=Array.from({length:6},createBlob);
 powerups=[];
 startTime=Date.now();
 }
 
-function spawnPowerup(){
-let type=Math.random()<0.5?'score':'time';
-powerups.push({x:rand(),y:rand(),r:10,type});
-}
-
-setInterval(spawnPowerup,5000);
-
-// COLLISION PUSH
 function separate(a,b){
 let d=dist(a,b);
 let overlap=(a.r+b.r)-d;
@@ -119,48 +134,55 @@ b.y-=dy*overlap/2;
 function update(){
 let p=player;
 
+// PLAYER SPEED (size based)
+let baseSpeed=4 - p.r*0.05;
+
 // movement
 let dx=mouse.x-canvas.width/2;
 let dy=mouse.y-canvas.height/2;
 let d=Math.hypot(dx,dy);
 if(d>10){
-p.x+=(dx/d)*p.speed;
-p.y+=(dy/d)*p.speed;
+p.x+=(dx/d)*baseSpeed;
+p.y+=(dy/d)*baseSpeed;
 }
 
 // bounds
 p.x=Math.max(p.r,Math.min(WORLD-p.r,p.x));
 p.y=Math.max(p.r,Math.min(WORLD-p.r,p.y));
 
-// collect points
+// points
 for(let i=points.length-1;i>=0;i--){
 if(dist(p,points[i])<p.r){
 points.splice(i,1);
 points.push({x:rand(),y:rand(),r:5});
 p.score+=10;
-p.r+=0.2;
+p.r+=0.3;
 }
 }
 
-// enemies
-for(let i=enemies.length-1;i>=0;i--){
-let e=enemies[i];
+// BLOBS
+for(let i=blobs.length-1;i>=0;i--){
+let b=blobs[i];
 
-// simple chase
-let dx=p.x-e.x, dy=p.y-e.y;
-let d=Math.hypot(dx,dy);
-e.x+=(dx/d)*1.5;
-e.y+=(dy/d)*1.5;
+// squishy movement
+b.angle+=Math.random()*0.2-0.1;
+b.x+=Math.cos(b.angle)*b.speed;
+b.y+=Math.sin(b.angle)*b.speed;
 
-// collide enemies
-for(let j=i+1;j<enemies.length;j++){
-separate(e,enemies[j]);
+// bounds bounce
+if(b.x<b.r||b.x>WORLD-b.r)b.angle=Math.PI-b.angle;
+if(b.y<b.r||b.y>WORLD-b.r)b.angle=-b.angle;
+
+// collide blobs
+for(let j=i+1;j<blobs.length;j++){
+separate(b,blobs[j]);
 }
 
-// player vs enemy
-if(dist(p,e)<p.r+e.r){
-if(p.r>e.r){
-enemies.splice(i,1);
+// player interaction
+if(dist(p,b)<p.r+b.r){
+if(p.r>b.r){
+blobs.splice(i,1);
+blobs.push(createBlob());
 p.score+=50;
 p.r+=1;
 }else{
@@ -170,21 +192,8 @@ p.x=1500;p.y=1500;
 }
 }
 
-// powerups
-for(let i=powerups.length-1;i>=0;i--){
-let pw=powerups[i];
-if(dist(p,pw)<p.r){
-if(pw.type==='score')p.score+=100;
-if(pw.type==='time')startTime+=5000;
-powerups.splice(i,1);
-}
-}
-
 // HUD
 let time=Math.floor((Date.now()-startTime)/1000);
-
-document.getElementById('score').textContent="Score: "+Math.floor(p.score);
-document.getElementById('time').textContent="Time: "+time;
 
 if(p.score>bestScore){
 bestScore=p.score;
@@ -195,16 +204,23 @@ bestTime=time;
 localStorage.setItem('bestTime',bestTime);
 }
 
+document.getElementById('score').textContent="Score: "+Math.floor(p.score);
+document.getElementById('time').textContent="Time: "+time+"s";
 document.getElementById('bestScore').textContent="Best Score: "+bestScore;
-document.getElementById('bestTime').textContent="Best Time: "+bestTime;
+document.getElementById('bestTime').textContent="Best Time: "+bestTime+"s";
 }
 
 function render(){
 let W=canvas.width,H=canvas.height;
 let camX=player.x-W/2, camY=player.y-H/2;
 
-ctx.fillStyle='#0c1017';
+// outside world = black
+ctx.fillStyle='#000';
 ctx.fillRect(0,0,W,H);
+
+// world
+ctx.fillStyle='#0c1017';
+ctx.fillRect(-camX,-camY,WORLD,WORLD);
 
 // points
 ctx.fillStyle='lime';
@@ -214,27 +230,44 @@ ctx.arc(pt.x-camX,pt.y-camY,pt.r,0,Math.PI*2);
 ctx.fill();
 }
 
-// enemies
+// blobs (animated squish)
+for(let b of blobs){
+let squish=1+Math.sin(Date.now()/200)*0.1;
+ctx.save();
+ctx.translate(b.x-camX,b.y-camY);
+ctx.scale(squish,1/squish);
+ctx.beginPath();
+ctx.arc(0,0,b.r,0,Math.PI*2);
 ctx.fillStyle='red';
-for(let e of enemies){
-ctx.beginPath();
-ctx.arc(e.x-camX,e.y-camY,e.r,0,Math.PI*2);
 ctx.fill();
-}
-
-// powerups
-for(let pw of powerups){
-ctx.fillStyle=pw.type==='score'?'gold':'cyan';
-ctx.beginPath();
-ctx.arc(pw.x-camX,pw.y-camY,pw.r,0,Math.PI*2);
-ctx.fill();
+ctx.restore();
 }
 
 // player
-ctx.fillStyle='white';
+let squish=1+Math.sin(Date.now()/150)*0.1;
+ctx.save();
+ctx.translate(player.x-camX,player.y-camY);
+ctx.scale(squish,1/squish);
 ctx.beginPath();
-ctx.arc(player.x-camX,player.y-camY,player.r,0,Math.PI*2);
+ctx.arc(0,0,player.r,0,Math.PI*2);
+ctx.fillStyle='white';
 ctx.fill();
+ctx.restore();
+}
+
+// MINIMAP
+mctx.fillStyle="#000";
+mctx.fillRect(0,0,150,150);
+
+// player
+mctx.fillStyle="white";
+mctx.fillRect(player.x/WORLD*150,player.y/WORLD*150,3,3);
+
+// blobs
+mctx.fillStyle="red";
+for(let b of blobs){
+mctx.fillRect(b.x/WORLD*150,b.y/WORLD*150,2,2);
+}
 }
 
 function loop(){
@@ -259,7 +292,7 @@ mouse.x=e.clientX;
 mouse.y=e.clientY;
 });
 
-// joystick
+// mobile joystick
 joy.addEventListener('touchstart',e=>{
 joyActive=true;
 let r=joy.getBoundingClientRect();
@@ -273,10 +306,7 @@ let dy=t.clientY-joyOrigin.y;
 mouse.x=canvas.width/2+dx*3;
 mouse.y=canvas.height/2+dy*3;
 });
-joy.addEventListener('touchend',()=>{
-joyActive=false;
-});
-
+joy.addEventListener('touchend',()=>joyActive=false);
 </script>
 </body>
 </html>
