@@ -151,7 +151,6 @@ const MOUSE_DEADZONE = 18;    // px — stops moving when cursor is this close
 
 let player, points, whites, cops, frameId, gameRunning;
 let sessionStart = 0;         // ms when current session started
-let sessionPaused = 0;        // accumulated ms from previous sessions
 let busts = 0;
 const keys = {};
 const mouse = { x: -9999, y: -9999, worldX: 0, worldY: 0 };
@@ -195,7 +194,6 @@ function init() {
   whites = Array.from({length:WHITE_COUNT}, createWhite);
   cops   = Array.from({length:COP_COUNT}, createCop);
   sessionStart = Date.now();
-  sessionPaused = 0;
 }
 
 function formatTime(sec) {
@@ -231,7 +229,7 @@ function bust() {
 }
 
 function updateHUD() {
-  const elapsed = Math.floor((Date.now() - sessionStart + sessionPaused) / 1000);
+  const elapsed = Math.floor((Date.now() - sessionStart) / 1000);
   const total   = totalTime + elapsed;
   document.getElementById('score-val').textContent = player.score;
   document.getElementById('speed-val').textContent = player.speed.toFixed(1)+'x';
@@ -439,7 +437,7 @@ function loop() {
 }
 
 function saveSession() {
-  const elapsed = Math.floor((Date.now() - sessionStart + sessionPaused) / 1000);
+  const elapsed = Math.floor((Date.now() - sessionStart) / 1000);
   totalTime += elapsed;
   localStorage.setItem('farmio_time', totalTime);
 }
