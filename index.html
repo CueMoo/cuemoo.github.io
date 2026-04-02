@@ -10,6 +10,14 @@
 body{background:#000;overflow:hidden;font-family:sans-serif;}
 canvas{display:block;}
 
+.skin{
+width:30px;height:30px;border-radius:50%;
+cursor:pointer;border:2px solid transparent;
+}
+.skin.selected{
+border:2px solid #34d399;
+}
+
 #menu{
 position:fixed;inset:0;
 display:flex;flex-direction:column;
@@ -73,6 +81,18 @@ background:rgba(255,255,255,0.3);
 <div id="bestTime"></div>
 </div>
 
+<div style="margin-bottom:20px;color:#aaa;">Choose Skin</div>
+<div id="skins" style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-bottom:20px;">
+  <div class="skin" data-color="red" style="background:red"></div>
+  <div class="skin" data-color="orange" style="background:orange"></div>
+  <div class="skin" data-color="yellow" style="background:yellow"></div>
+  <div class="skin" data-color="green" style="background:green"></div>
+  <div class="skin" data-color="blue" style="background:blue"></div>
+  <div class="skin" data-color="pink" style="background:pink"></div>
+  <div class="skin" data-color="black" style="background:black;border:1px solid #555"></div>
+  <div class="skin" data-color="white" style="background:white"></div>
+</div>
+
 <div id="joystick"><div id="knob"></div></div>
 
 <script>
@@ -84,6 +104,8 @@ const mctx=mini.getContext('2d');
 
 const WORLD=3000;
 
+let playerColor = localStorage.getItem('skin') || 'white';
+  
 let player,points,blobs,powerups;
 let mouse={x:0,y:0};
 let startTime=0;
@@ -236,6 +258,20 @@ ctx.arc(pt.x-camX,pt.y-camY,pt.r,0,Math.PI*2);
 ctx.fill();
 }
 
+document.querySelectorAll('.skin').forEach(el=>{
+  if(el.dataset.color === playerColor){
+    el.classList.add('selected');
+  }
+
+  el.addEventListener('click',()=>{
+    document.querySelectorAll('.skin').forEach(s=>s.classList.remove('selected'));
+    el.classList.add('selected');
+
+    playerColor = el.dataset.color;
+    localStorage.setItem('skin', playerColor);
+  });
+});
+
 // blobs
 for(let b of blobs){
 let squish=1+Math.sin(Date.now()/200)*0.1;
@@ -247,6 +283,11 @@ ctx.arc(0,0,b.r,0,Math.PI*2);
 ctx.fillStyle='red';
 ctx.fill();
 ctx.restore();
+ctx.fillStyle = '#fff';
+ctx.font = `${b.r * 0.8}px sans-serif`;
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+ctx.fillText(Math.floor(b.r), b.x-camX, b.y-camY+2);
 }
 
 // player
@@ -256,9 +297,14 @@ ctx.translate(player.x-camX,player.y-camY);
 ctx.scale(squish,1/squish);
 ctx.beginPath();
 ctx.arc(0,0,player.r,0,Math.PI*2);
-ctx.fillStyle='white';
+ctx.fillStyle=playerColor;
 ctx.fill();
 ctx.restore();
+ctx.fillStyle = playerColor === 'white' ? '#000' : '#fff';
+ctx.font = `${player.r}px sans-serif`;
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+ctx.fillText(Math.floor(player.r), 0, 2);
 
 // minimap
 mctx.fillStyle="#000";
