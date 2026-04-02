@@ -7,23 +7,24 @@
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-body{background:#000;overflow:hidden;font-family:sans-serif;}
+body{background:#111018;overflow:hidden;font-family:sans-serif;}
 canvas{display:block;}
 
-.skin{
-width:30px;height:30px;border-radius:50%;
-cursor:pointer;border:2px solid transparent;
-}
-.skin.selected{
-border:2px solid #34d399;
-}
-
+/* MENU */
 #menu{
 position:fixed;inset:0;
 display:flex;flex-direction:column;
 align-items:center;justify-content:center;
-background:#0c1017;color:#fff;
-z-index:20;
+background:linear-gradient(180deg,#181622,#0e0c14);
+color:#fff;z-index:20;
+}
+#title{
+font-size:70px;
+font-weight:900;
+background:linear-gradient(45deg,#a855f7,#6366f1);
+-webkit-background-clip:text;
+color:transparent;
+margin-bottom:20px;
 }
 button{
 padding:14px 40px;margin:10px;
@@ -31,28 +32,43 @@ border:none;border-radius:999px;
 font-size:18px;font-weight:bold;
 cursor:pointer;
 }
-#single{background:#34d399;}
-#multi{background:#555;color:#aaa;}
+#single{background:#7c3aed;color:#fff;}
+#multi{background:#333;color:#777;}
 
+/* HUD */
 #hud{
 position:fixed;top:10px;left:10px;
-color:#fff;z-index:10;
-background:rgba(0,0,0,0.5);
+color:#ddd;z-index:10;
+background:rgba(20,18,30,0.7);
 padding:10px 14px;border-radius:10px;
 font-size:14px;
 }
 
+/* MINIMAP */
 #minimap{
 position:fixed;bottom:10px;right:10px;
 width:150px;height:150px;
-background:#000;border:2px solid #555;
+background:#0e0c14;border:2px solid #444;
 border-radius:8px;
 }
 
+/* DEATH SCREEN */
+#death{
+position:fixed;inset:0;
+display:none;
+align-items:center;justify-content:center;
+flex-direction:column;
+background:rgba(0,0,0,0.7);
+z-index:30;color:#fff;
+}
+#death h2{font-size:50px;margin-bottom:10px;}
+#death button{background:#7c3aed;color:#fff;}
+
+/* JOYSTICK */
 #joystick{
 position:fixed;bottom:30px;left:30px;
 width:100px;height:100px;border-radius:50%;
-background:rgba(255,255,255,0.1);
+background:rgba(255,255,255,0.08);
 display:none;align-items:center;justify-content:center;
 }
 #knob{
@@ -66,7 +82,7 @@ background:rgba(255,255,255,0.3);
 <body>
 
 <div id="menu">
-<h1>FARM.IO+</h1>
+<div id="title">FARM.IO+</div>
 <button id="single">Singleplayer</button>
 <button id="multi">Multiplayer (soon)</button>
 </div>
@@ -81,16 +97,11 @@ background:rgba(255,255,255,0.3);
 <div id="bestTime"></div>
 </div>
 
-<div style="margin-bottom:20px;color:#aaa;">Choose Skin</div>
-<div id="skins" style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-bottom:20px;">
-  <div class="skin" data-color="red" style="background:red"></div>
-  <div class="skin" data-color="orange" style="background:orange"></div>
-  <div class="skin" data-color="yellow" style="background:yellow"></div>
-  <div class="skin" data-color="green" style="background:green"></div>
-  <div class="skin" data-color="blue" style="background:blue"></div>
-  <div class="skin" data-color="pink" style="background:pink"></div>
-  <div class="skin" data-color="black" style="background:black;border:1px solid #555"></div>
-  <div class="skin" data-color="white" style="background:white"></div>
+<div id="death">
+<h2>You Died</h2>
+<div id="countdown"></div>
+<button id="again">Play Again</button>
+<button id="exit">Exit to Lobby</button>
 </div>
 
 <div id="joystick"><div id="knob"></div></div>
@@ -98,29 +109,24 @@ background:rgba(255,255,255,0.3);
 <script>
 const canvas=document.getElementById('canvas');
 const ctx=canvas.getContext('2d');
-
 const mini=document.getElementById('minimap');
 const mctx=mini.getContext('2d');
 
 const WORLD=3000;
 
-let playerColor = localStorage.getItem('skin') || 'white';
-  
-let player,points,blobs,powerups;
+let player,points,blobs;
 let mouse={x:0,y:0};
 let startTime=0;
 let gameRunning=false;
+let dead=false;
 
 let bestScore=localStorage.getItem('bestScore')||0;
 let bestTime=localStorage.getItem('bestTime')||0;
 
-// MOBILE
-let joy=document.getElementById('joystick');
-let joyActive=false, joyOrigin={x:0,y:0};
-
+// resize
 function resize(){
-canvas.width=window.innerWidth;
-canvas.height=window.innerHeight;
+canvas.width=innerWidth;
+canvas.height=innerHeight;
 }
 window.addEventListener('resize',resize);
 resize();
@@ -130,67 +136,80 @@ function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
 
 // BLOBS
 function createBlob(){
-let r=15+Math.random()*25;
+let r=20+Math.random()*30;
 return{
 x:rand(),y:rand(),
 r,
-speed:Math.max(0.8,2.2 - r*0.03),
-angle:Math.random()*Math.PI*2
+speed:Math.max(0.8,2.2-r*0.03),
+angle:Math.random()*Math.PI*2,
+wobble:Math.random()*100
 };
 }
 
 function init(){
-player={x:1500,y:1500,r:20,score:0};
+player={x:1500,y:1500,r:20,score:20};
 points=Array.from({length:80},()=>({x:rand(),y:rand(),r:5}));
 blobs=Array.from({length:6},createBlob);
-powerups=[];
 startTime=Date.now();
+dead=false;
+document.getElementById('death').style.display='none';
 }
 
-function separate(a,b){
-let d=dist(a,b)||1;
-let overlap=(a.r+b.r)-d;
-if(overlap>0){
-let dx=(a.x-b.x)/d;
-let dy=(a.y-b.y)/d;
-a.x+=dx*overlap/2;
-b.x-=dx*overlap/2;
-a.y+=dy*overlap/2;
-b.y-=dy*overlap/2;
+function die(){
+dead=true;
+gameRunning=false;
+
+let deathDiv=document.getElementById('death');
+let cd=document.getElementById('countdown');
+deathDiv.style.display='flex';
+
+let t=3;
+cd.textContent="Returning in "+t;
+
+let interval=setInterval(()=>{
+t--;
+cd.textContent="Returning in "+t;
+if(t<=0){
+clearInterval(interval);
+showMenu();
 }
+},1000);
 }
 
+function showMenu(){
+document.getElementById('menu').style.display='flex';
+document.getElementById('death').style.display='none';
+}
+
+// update
 function update(){
 let p=player;
 
-// SPEED
-let speed=Math.max(1.2,4 - p.r*0.05);
+let speed=Math.max(1.2,4-p.r*0.05);
 
-// movement
+// move
 let dx=mouse.x-canvas.width/2;
 let dy=mouse.y-canvas.height/2;
 let d=Math.hypot(dx,dy);
-
 if(d>10){
 p.x+=(dx/d)*speed;
 p.y+=(dy/d)*speed;
 }
 
-// bounds
 p.x=Math.max(p.r,Math.min(WORLD-p.r,p.x));
 p.y=Math.max(p.r,Math.min(WORLD-p.r,p.y));
 
-// points
+// eat points
 for(let i=points.length-1;i>=0;i--){
 if(dist(p,points[i])<p.r){
 points.splice(i,1);
 points.push({x:rand(),y:rand(),r:5});
 p.score+=10;
-p.r+=0.3;
+p.r=p.score/2;
 }
 }
 
-// BLOBS
+// blobs
 for(let i=blobs.length-1;i>=0;i--){
 let b=blobs[i];
 
@@ -198,13 +217,9 @@ b.angle+=Math.random()*0.2-0.1;
 b.x+=Math.cos(b.angle)*b.speed;
 b.y+=Math.sin(b.angle)*b.speed;
 
+// bounce
 if(b.x<b.r||b.x>WORLD-b.r)b.angle=Math.PI-b.angle;
 if(b.y<b.r||b.y>WORLD-b.r)b.angle=-b.angle;
-
-// collide blobs
-for(let j=i+1;j<blobs.length;j++){
-separate(b,blobs[j]);
-}
 
 // fight
 if(dist(p,b)<p.r+b.r){
@@ -212,10 +227,9 @@ if(p.r>b.r){
 blobs.splice(i,1);
 blobs.push(createBlob());
 p.score+=50;
-p.r+=1;
+p.r=p.score/2;
 }else{
-p.score*=0.5;
-p.x=1500;p.y=1500;
+die();
 }
 }
 }
@@ -238,80 +252,67 @@ document.getElementById('bestScore').textContent="Best Score: "+bestScore;
 document.getElementById('bestTime').textContent="Best Time: "+bestTime+"s";
 }
 
+// render
 function render(){
 let W=canvas.width,H=canvas.height;
 let camX=player.x-W/2, camY=player.y-H/2;
 
-// black outside
+// bg
 ctx.fillStyle='#000';
 ctx.fillRect(0,0,W,H);
 
-// world
-ctx.fillStyle='#0c1017';
+ctx.fillStyle='#111018';
 ctx.fillRect(-camX,-camY,WORLD,WORLD);
-
-// points
-ctx.fillStyle='lime';
-for(let pt of points){
-ctx.beginPath();
-ctx.arc(pt.x-camX,pt.y-camY,pt.r,0,Math.PI*2);
-ctx.fill();
-}
-
-document.querySelectorAll('.skin').forEach(el=>{
-  if(el.dataset.color === playerColor){
-    el.classList.add('selected');
-  }
-
-  el.addEventListener('click',()=>{
-    document.querySelectorAll('.skin').forEach(s=>s.classList.remove('selected'));
-    el.classList.add('selected');
-
-    playerColor = el.dataset.color;
-    localStorage.setItem('skin', playerColor);
-  });
-});
 
 // blobs
 for(let b of blobs){
-let squish=1+Math.sin(Date.now()/200)*0.1;
+let wob=Math.sin(Date.now()/200+b.wobble)*0.1;
+
 ctx.save();
 ctx.translate(b.x-camX,b.y-camY);
-ctx.scale(squish,1/squish);
+ctx.scale(1+wob,1-wob);
+
 ctx.beginPath();
 ctx.arc(0,0,b.r,0,Math.PI*2);
-ctx.fillStyle='red';
+ctx.fillStyle='#ef4444';
 ctx.fill();
+
+// size text
+ctx.fillStyle='#fff';
+ctx.font=`${b.r*0.7}px sans-serif`;
+ctx.textAlign='center';
+ctx.textBaseline='middle';
+ctx.fillText(Math.floor(b.r),0,2);
+
 ctx.restore();
-ctx.fillStyle = '#fff';
-ctx.font = `${b.r * 0.8}px sans-serif`;
-ctx.textAlign = 'center';
-ctx.textBaseline = 'middle';
-ctx.fillText(Math.floor(b.r), b.x-camX, b.y-camY+2);
 }
 
 // player
-let squish=1+Math.sin(Date.now()/150)*0.1;
+let wob=Math.sin(Date.now()/150)*0.1;
 ctx.save();
 ctx.translate(player.x-camX,player.y-camY);
-ctx.scale(squish,1/squish);
+ctx.scale(1+wob,1-wob);
+
 ctx.beginPath();
 ctx.arc(0,0,player.r,0,Math.PI*2);
-ctx.fillStyle=playerColor;
+ctx.fillStyle='#a855f7';
 ctx.fill();
+
+// SIZE = SCORE
+ctx.fillStyle='#fff';
+ctx.font=`${player.r*0.6}px sans-serif`;
+ctx.textAlign='center';
+ctx.textBaseline='middle';
+ctx.fillText(Math.floor(player.score),0,2);
+
 ctx.restore();
-ctx.fillStyle = playerColor === 'white' ? '#000' : '#fff';
-ctx.font = `${player.r}px sans-serif`;
-ctx.textAlign = 'center';
-ctx.textBaseline = 'middle';
-ctx.fillText(Math.floor(player.r), 0, 2);
 
 // minimap
-mctx.fillStyle="#000";
+mctx.fillStyle="#0e0c14";
 mctx.fillRect(0,0,150,150);
 
-mctx.fillStyle="white";
-mctx.fillRect(player.x/WORLD*150,player.y/WORLD*150,3,3);
+mctx.fillStyle="#a855f7";
+mctx.fillRect(player.x/WORLD*150,player.y/WORLD*150,4,4);
 
 mctx.fillStyle="red";
 for(let b of blobs){
@@ -326,40 +327,27 @@ render();
 requestAnimationFrame(loop);
 }
 
-//  button
-document.getElementById('single').addEventListener('click',()=>{
+// buttons
+document.getElementById('single').onclick=()=>{
 document.getElementById('menu').style.display='none';
-
-// reset mouse to center so player moves immediately
-mouse.x=canvas.width/2;
-mouse.y=canvas.height/2;
-
 init();
 gameRunning=true;
 loop();
-});
+};
+
+document.getElementById('again').onclick=()=>{
+init();
+gameRunning=true;
+loop();
+};
+
+document.getElementById('exit').onclick=showMenu;
 
 // mouse
 window.addEventListener('mousemove',e=>{
 mouse.x=e.clientX;
 mouse.y=e.clientY;
 });
-
-// joystick
-joy.addEventListener('touchstart',e=>{
-joyActive=true;
-let r=joy.getBoundingClientRect();
-joyOrigin={x:r.left+r.width/2,y:r.top+r.height/2};
-});
-joy.addEventListener('touchmove',e=>{
-if(!joyActive)return;
-let t=e.touches[0];
-let dx=t.clientX-joyOrigin.x;
-let dy=t.clientY-joyOrigin.y;
-mouse.x=canvas.width/2+dx*3;
-mouse.y=canvas.height/2+dy*3;
-});
-joy.addEventListener('touchend',()=>joyActive=false);
 </script>
 </body>
 </html>
