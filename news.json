@@ -10,5 +10,12 @@
     "tags": ["NEW"],
     "headline": "News System Launched",
     "body": "You can now read patch notes and updates directly in the game menu. Edit news.json to add new entries — just add a new object with date, tags (NEW/FIX/UPDATE), headline, and body fields."
-  }
+    
+  },
+  {
+    "date": "April 2, 2026",
+    "tags": ["FIX", "UPDATE"]
+    "headline": "Bug Fixes - Spawn With Speed, And Death Screen",
+    "body": "Fixed where you would spawn in with speed. Fixed Getting kicked to Menu and Death Screen"
+  } 
 ]
