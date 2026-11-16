@@ -1,0 +1,114 @@
+[
+  {
+    "id": "retrobowl",
+    "name": "Retro Bowl",
+    "description": "Run your football team and win the game.",
+    "category": "Sports",
+    "url": "games/retrobowl/index.html",
+    "thumbnail": "games/retrobowl/img/icon.jpg"
+  },
+  {
+    "id": "basketballlegends",
+    "name": "Basketball Legends",
+    "description": "1v1 basketball with crazy dunks and special moves.",
+    "category": "Sports",
+    "url": "games/basketballlegends/index.html",
+    "thumbnail": "games/basketballlegends/assets/images/logo.png"
+  },
+  {
+    "id": "eggycar",
+    "name": "Eggy Car",
+    "description": "Drive the car and keep the egg from falling.",
+    "category": "Driving",
+    "url": "games/eggycar/eggycar.html",
+    "thumbnail": "thumbs/eggycar.png"
+  },
+    {
+    "id": "Fahrenheit451",
+    "name": "Fahrenheit 451",
+    "description": "The PDF of this book",
+    "category": "Books",
+    "url": "games/Fahrenheit451/index.html",
+    "thumbnail": "games/retrobowl/img/icon.jpg"
+  },
+    {
+    "id": "drivemad",
+    "name": "Drive Mad",
+    "description": "Drive the car mad into things..",
+    "category": "Driving",
+    "url": "games/drivemad/drivemad.html",
+    "thumbnail": "thumbs/drivemad.png"
+  },
+    {
+    "id": "driftboss",
+    "name": "Drift Boss",
+    "description": "Drift the car and stay on platform.",
+    "category": "Driving",
+    "url": "games/driftboss/driftboss.html",
+    "thumbnail": "thumbs/driftboss.png"
+  },
+  {
+    "id": "subwaysurfers",
+    "name": "Subway Surfers",
+    "description": "Run through the subway and dodge the trains.",
+    "category": "Arcade",
+    "url": "games/subwaysurfersny/index.html",
+    "thumbnail": "thumbs/subwaysurfers.png"
+  },
+  {
+    "id": "stickmanhook",
+    "name": "Stickman Hook",
+    "description": "Swing through levels with the grappling hook.",
+    "category": "Action",
+    "url": "games/stickmanhook/index.html",
+    "thumbnail": "thumbs/stickmanhook.jpg"
+  },
+  {
+    "id": "bitlife",
+    "name": "BitLife",
+    "description": "Live a virtual life and make choices.",
+    "category": "Simulation",
+    "url": "games/bitlife/index.html",
+    "thumbnail": "thumbs/bitlife.png"
+  },
+    {
+    "id": "tinyfishing",
+    "name": "Tiny Fishing",
+    "description": "Live a virtual fishing life.",
+    "category": "Simulation",
+    "url": "games/tinyfishing/index.html",
+    "thumbnail": "thumbs/tinyfishing.png"
+  },
+  {
+    "id": "cookieclicker",
+    "name": "Cookie Clicker",
+    "description": "Click cookies and build your bakery empire.",
+    "category": "Idle",
+    "url": "games/cookieclicker/index.html",
+    "thumbnail": "thumbs/cookieclicker.png"
+  },
+  {
+    "id": "clickerheroes",
+    "name": "Clicker Heroes",
+    "description": "Click monsters hire heroes and get stronger.",
+    "category": "Idle",
+    "url": "games/clickerheroes/index.html",
+    "thumbnail": "thumbs/clickerheroes.png"
+  },
+  {
+    "id": "littlealchemy1",
+    "name": "Little Alchemy 1",
+    "description": "Mix elements to make more elements",
+    "category": "Puzzle",
+    "url": "games/littlealchemy1/index.html",
+    "thumbnail": "thumbs/littlealchemy1.png"
+  },
+  {
+    "id": "littlealchemy2",
+    "name": "Little Alchemy",
+    "description": "Mix elements to make more elements",
+    "category": "Puzzle",
+    "url": "games/littlealchemy2/index.html",
+    "thumbnail": "thumbs/littlealchemy2.jpeg"
+  }
+]
