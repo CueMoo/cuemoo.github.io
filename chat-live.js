@@ -18,7 +18,7 @@ function applyBanState(banned){
  const banner=$("ban-banner");
  if(banner)banner.classList.toggle("hidden",!isBanned);
  ["chat-message","chat-send","dm-input","dm-send"].forEach(id=>{const n=$(id);if(n)n.disabled=isBanned||!n.dataset.ready});
- if(isBanned)say("🚫 BANNED — your account remains signed in, but games and chat are disabled.",true);
+ if(isBanned)say("🚫 BANNED — your account remains signed in, but chat is disabled.",true);
  document.dispatchEvent(new CustomEvent("cuemoo:ban-status",{detail:{banned:isBanned}}));
 }
 async function enter(profile){
@@ -114,12 +114,12 @@ $("owner-search-btn").addEventListener("click",searchOwnerMembers);
 $("owner-search").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();searchOwnerMembers()}});
 async function start(){
  const {data:{session},error}=await db.auth.getSession();
- if(error){window.cuemooAccountStatus="blocked";say("Supabase connection failed. Sign-in status could not be verified, so games are locked.",true);return}
+ if(error){window.cuemooAccountStatus="blocked";say("Supabase connection failed. Sign-in status could not be verified, so community features are unavailable.",true);return}
  if(session?.user){
   user=session.user;
   const {data:p,error}=await db.from("chat_profiles").select("username,is_banned").eq("id",user.id).single();
-  if(error||!p){window.cuemooAccountStatus="blocked";say("Profile not found. Sign-in status could not be verified, so games are locked.",true);return}
+  if(error||!p){window.cuemooAccountStatus="blocked";say("Profile not found. Sign-in status could not be verified, so community features are unavailable.",true);return}
   await enter(p);
- }else{window.cuemooAccountStatus="guest";window.cuemooBanned=false;say("Log in or create an account to use chat and launch games.")}
+ }else{window.cuemooAccountStatus="guest";window.cuemooBanned=false;say("Log in or create an account to use chat and use community features.")}
 }
 start();
