@@ -72,7 +72,7 @@ async function showPublicProfile(id){
  if(error||!p){box.append(el("p","chat-empty","Could not load that profile."));return}
  const head=el("div","public-profile-head",p.display_name||p.username);
  head.append(el("small","","@"+p.username));
- const bio=el("p","public-profile-bio",p.bio||"This player hasn't added a bio yet.");
+ const bio=el("p","public-profile-bio",p.bio||"This member hasn't added a bio yet.");
  const actions=el("div","social-actions");
  const {data:rel}=await db.from("friend_requests").select("id,status,sender_id,receiver_id").or("and(sender_id.eq."+user.id+",receiver_id.eq."+id+"),and(sender_id.eq."+id+",receiver_id.eq."+user.id+")").limit(1).maybeSingle();
  if(rel?.status==="accepted")actions.append(btn("Remove friend",()=>removeFriend(id)));
