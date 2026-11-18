@@ -3,36 +3,26 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CueMoos Games</title>
+  <title>CueMoo</title>
   <link rel="stylesheet" href="styles.css?v=20261113-socialfix1">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23e56b92'/><text x='50' y='68' text-anchor='middle' font-size='52' font-family='system-ui,sans-serif' font-weight='700' fill='white'>C</text></svg>">
 </head>
 <body>
   <header>
     <div class="container header-content">
-      <h1 class="logo">CueMoos Games</h1>
+      <h1 class="logo">CueMoo</h1>
       <nav>
-        <button class="nav-btn active" data-tab="games">Games</button>
-        <button class="nav-btn" data-tab="about">About</button>
+        <button class="nav-btn active" <button class="nav-btn" data-tab="about">About</button>
         <button class="nav-btn" data-tab="settings">Settings</button>
-        <button class="nav-btn" data-tab="chat">Global Chat</button>
+        <button class="nav-btn" data-tab="chat">Community</button>
       </nav>
     </div>
   </header>
 
   <main class="container">
-    <section id="games" class="tab-content active">
-      <div class="controls">
-        <input type="text" id="search" placeholder="Search games..." autocomplete="off">
-        <select id="category-filter"><option value="all">All Games</option></select>
-      </div>
-      <div id="games-grid" class="games-grid"></div>
-      <p id="no-results" class="no-results hidden">No games found.</p>
-    </section>
-
-    <section id="chat" class="tab-content">
+    <section id="chat" class="tab-content active">
       <div class="chat-card">
-        <div class="chat-heading"><div><h2>Global Chat</h2><p>Talk with everyone playing on CueMoos Games.</p></div><span class="chat-live">● LIVE</span></div>
+        <div class="chat-heading"><div><h2>Global Chat</h2><p>Connect and chat with the CueMoo community.</p></div><span class="chat-live">● LIVE</span></div>
         <section id="chat-auth" class="chat-auth">
           <div class="chat-auth-tabs">
             <button type="button" class="chat-auth-tab active" data-auth-mode="signup" aria-pressed="true">Create account</button>
@@ -52,7 +42,7 @@
           <div class="social-nav" id="social-nav">
             <button class="social-tab active" data-social="global">Global</button><button class="social-tab" data-social="friends">Friends</button><button class="social-tab" data-social="messages">Messages</button><button class="social-tab" data-social="profile">Profile</button><button class="social-tab hidden" id="owner-tab" data-social="owner">Owner</button>
           </div>
-          <section class="social-view" id="view-global"><div id="ban-banner" class="ban-banner hidden" role="alert"><strong>🚫 BANNED</strong><span>This account is banned. You can stay signed in, but games and chat are disabled.</span></div><div class="global-chat-tools"><span class="chat-tools-label">Community chat</span><button type="button" id="clear-chat" class="danger-btn hidden">Clear chat</button></div><div id="chat-messages" class="chat-messages" aria-live="polite"><p class="chat-empty">Loading messages…</p></div><form id="chat-form" class="chat-compose"><input id="chat-message" maxlength="300" placeholder="Write a message..." autocomplete="off" disabled><button id="chat-send" type="submit" disabled>Send</button></form></section>
+          <section class="social-view" id="view-global"><div id="ban-banner" class="ban-banner hidden" role="alert"><strong>🚫 BANNED</strong><span>This account is restricted. You can stay signed in, but chat is disabled.</span></div><div class="global-chat-tools"><span class="chat-tools-label">Community chat</span><button type="button" id="clear-chat" class="danger-btn hidden">Clear chat</button></div><div id="chat-messages" class="chat-messages" aria-live="polite"><p class="chat-empty">Loading messages…</p></div><form id="chat-form" class="chat-compose"><input id="chat-message" maxlength="300" placeholder="Write a message..." autocomplete="off" disabled><button id="chat-send" type="submit" disabled>Send</button></form></section>
           <section class="social-view hidden" id="view-friends">
             <h3>Find players</h3><div class="social-inline"><input id="friend-search" maxlength="24" placeholder="Search username"><button id="friend-search-btn">Search</button></div><div id="friend-results" class="social-list"></div>
             <h3>Friend requests</h3><div id="friend-requests" class="social-list"></div><h3>Your friends</h3><div id="friend-list" class="social-list"></div><div id="public-profile" class="public-profile hidden" aria-live="polite"></div>
@@ -73,8 +63,8 @@
     <section id="about" class="tab-content">
       <div class="about-card">
         <h2>About CueMoo</h2>
-        <p>Hey Im Devin from Winchester Kansas.</p>
-        <p>This is CueMoos Games. I put my games here so I can play them and share them.</p>
+        <p>Welcome to CueMoo.</p>
+        <p>CueMoo is a community space for conversations and connecting with others.</p>
       </div>
     </section>
 
@@ -85,22 +75,12 @@
           <h3>Themes</h3><p class="setting-help">Default Is Rose Pink. Tap a circle to switch.</p>
           <div id="theme-grid" class="theme-grid"></div>
         </div>
-        <div class="setting-block">
-          <h3>Layout</h3>
-          <div class="setting-row"><span>Card size</span><div class="chip-row" id="card-size"><button class="chip active" data-size="compact">Compact</button><button class="chip" data-size="cozy">Cozy</button><button class="chip" data-size="normal">Normal</button></div></div>
-          <div class="setting-row"><span>Show game descriptions</span><label class="switch"><input type="checkbox" id="toggle-desc" checked><span class="slider"></span></label></div>
-        </div>
-        <div class="setting-block">
-          <h3>Play</h3>
-          <div class="setting-row"><span>Open games in a new tab</span><label class="switch"><input type="checkbox" id="toggle-newtab"><span class="slider"></span></label></div>
-          <div class="setting-row"><span>Less motion</span><label class="switch"><input type="checkbox" id="toggle-motion"><span class="slider"></span></label></div>
-        </div>
         <div class="setting-block"><button type="button" id="reset-settings" class="reset-btn">Reset settings</button></div>
       </div>
     </section>
   </main>
 
-  <footer><div class="container"><p>CueMoos Games</p></div></footer>
+  <footer><div class="container"><p>CueMoo</p></div></footer>
   <script src="script.js"></script>
   <script type="module" src="chat-live.js?v=20261113-socialfix1"></script>
 </body>
